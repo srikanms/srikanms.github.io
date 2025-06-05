@@ -595,11 +595,11 @@
             pan.x -= (cx * (scale - 1)) * zoom;
             pan.y -= (cy * (scale - 1)) * zoom;
             applyTransform();
-        }, { passive: false });
-
-        // --- Node creation ---
+        }, { passive: false });        // --- Node creation ---
         function createFirstNode(e) {
-            const x = (window.innerWidth / 2 - pan.x) / zoom;
+            // Position the first node on the left side with nice margin (200px from left edge)
+            const leftMargin = 200;
+            const x = (leftMargin - pan.x) / zoom;
             const y = (window.innerHeight / 2 - pan.y) / zoom;
             const node = createNode('New Idea', x, y, null);
             scheduleRender();
@@ -608,7 +608,7 @@
                 selectNode(node);
                 startEditing(node);
             }, 50);
-        }        function createNode(text, x, y, parent) {
+        }function createNode(text, x, y, parent) {
             const node = {
                 id: nextId++,
                 text,
@@ -790,8 +790,8 @@
                     y: (rootRect.top - containerRect.top) / zoom
                 };
             }
-            
-            // Arrange multiple roots with proper spacing
+              // Arrange multiple roots with proper spacing on the left side
+            const leftMargin = 200; // Consistent left margin
             let currentY = 40;
             roots.forEach(root => {
                 const subtreeHeight = measureSubtreeHeight(root);
@@ -799,15 +799,16 @@
                     // Keep first root at its current position
                     arrangeSubtree(root, root.x, root.y, 0);
                 } else {
-                    // Position other roots with proper spacing
-                    arrangeSubtree(root, 40, currentY + subtreeHeight / 2, 0);
+                    // Position other roots with proper spacing, aligned to left margin
+                    arrangeSubtree(root, leftMargin, currentY + subtreeHeight / 2, 0);
                 }
                 currentY += subtreeHeight + 60; // Extra spacing between root trees
             });
             
-            // Only center if this is initial load or no preserved position
-            if (!preservedRootPosition) {
-                centerMindmap();
+            // Don't center the mindmap - let it grow from left to right
+            // Only center vertically if this is initial load and no preserved position
+            if (!preservedRootPosition && nodes.length > 0) {
+                centerMindmapVertically();
             }
             
             scheduleRender();
@@ -852,9 +853,7 @@
                 // Move to next child's position
                 currentY += childHeight + spacing;
             });
-        }
-
-        function centerMindmap() {
+        }        function centerMindmap() {
             // Compute bounding box of all visible nodes
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             nodes.forEach(n => {
@@ -869,6 +868,22 @@
             const mapW = maxX - minX, mapH = maxY - minY;
             const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
             pan.x = cx - (minX + mapW / 2) * zoom;
+            pan.y = cy - (minY + mapH / 2) * zoom;
+            applyTransform();
+        }
+
+        function centerMindmapVertically() {
+            // Only center vertically, keep left alignment
+            let minY = Infinity, maxY = -Infinity;
+            nodes.forEach(n => {
+                if (isNodeVisible(n)) {
+                    minY = Math.min(minY, n.y);
+                    maxY = Math.max(maxY, n.y + 40);
+                }
+            });
+            if (minY === Infinity) return;
+            const mapH = maxY - minY;
+            const cy = window.innerHeight / 2;
             pan.y = cy - (minY + mapH / 2) * zoom;
             applyTransform();
         }
@@ -992,13 +1007,13 @@
                 // Show immediate children (they might have their own collapsed state)
                 showChildren(node);
             }
-            
-            // Rearrange positions and redraw edges
+              // Rearrange positions and redraw edges
             const roots = nodes.filter(n => !n.parent);
+            const leftMargin = 200; // Use consistent left margin
             let y = 0;
             roots.forEach(root => {
                 const subtreeHeight = measureSubtreeHeight(root);
-                arrangeSubtree(root, 40, y + 40, 0);
+                arrangeSubtree(root, leftMargin, y + 40, 0);
                 y += subtreeHeight + 40;
             });
             
