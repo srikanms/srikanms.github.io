@@ -1689,11 +1689,13 @@
             input.onchange = e => {
                 const file = e.target.files[0];
                 if (file) {
-                    const reader = new FileReader();
-                    reader.onload = e => {
+                    const reader = new FileReader();                    reader.onload = e => {
                         try {
+                            console.log('Loading markdown file...', e.target.result.substring(0, 200) + '...');
                             parseMarkdownToMindMap(e.target.result);
+                            console.log('Loaded', nodes.length, 'nodes');
                         } catch (err) {
+                            console.error('Error loading markdown:', err);
                             alert('Error loading markdown: ' + err.message);
                         }
                     };
@@ -1702,8 +1704,8 @@
             };
             input.click();
         }
-        
-        function parseMarkdownToMindMap(markdown) {
+          function parseMarkdownToMindMap(markdown) {
+            console.log('Parsing markdown:', markdown.substring(0, 100) + '...');
             nodes = [];
             selectedNode = null;
             nextId = 1;
@@ -1718,24 +1720,51 @@
                 } catch (e) {
                     console.warn('Failed to parse metadata:', e);
                 }
-            }
-              // Parse markdown lines
-            const lines = markdown.split('\n');
+            }              // Parse markdown lines - handle both CRLF and LF line endings
+            const lines = markdown.replace(/\r\n/g, '\n').split('\n');
             const nodeStack = [];
             let currentNode = null;
-            
-            lines.forEach(line => {
+              lines.forEach(line => {
                 // Skip empty lines and metadata
                 if (!line.trim() || line.startsWith('<!--') || line.startsWith('#')) return;
                 
-                // Check if this is a note line (indented >)
+                console.log('Processing line:', line);
+                  // Check if this is a note line (indented >)
                 const noteMatch = line.match(/^(\s*)>\s*(.*)$/);
-                if (noteMatch && currentNode) {
+                if (noteMatch) {
+                    const noteIndent = noteMatch[1].length / 2;
                     const noteText = noteMatch[2];
-                    if (currentNode.note) {
-                        currentNode.note += '\n' + noteText;
+                    
+                    // Find the node this note belongs to based on indentation
+                    let targetNode = null;
+                    if (noteIndent === 0) {
+                        // Note at root level - find the last root node
+                        for (let i = nodes.length - 1; i >= 0; i--) {
+                            if (!nodes[i].parent) {
+                                targetNode = nodes[i];
+                                break;
+                            }
+                        }
                     } else {
-                        currentNode.note = noteText;
+                        // Note is indented - find the node at the parent level
+                        const parentLevel = noteIndent - 1;
+                        for (let i = nodeStack.length - 1; i >= 0; i--) {
+                            if (nodeStack[i].level === parentLevel) {
+                                targetNode = nodeStack[i].node;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (targetNode) {
+                        if (targetNode.note) {
+                            targetNode.note += '\n' + noteText;
+                        } else {
+                            targetNode.note = noteText;
+                        }
+                        console.log('Added note to:', targetNode.text, 'note:', noteText);
+                    } else {
+                        console.warn('Could not find target node for note:', noteText, 'at indent:', noteIndent);
                     }
                     return;
                 }
@@ -1745,8 +1774,7 @@
                 if (indentMatch) {
                     const indent = indentMatch[1].length / 2;
                     const text = indentMatch[2].trim();
-                    
-                    // Find parent based on indentation
+                      // Find parent based on indentation
                     let parent = null;
                     if (indent > 0 && nodeStack.length > 0) {
                         // Find the closest parent at the correct level
@@ -1757,28 +1785,27 @@
                             }
                         }
                     }
-                    
-                    // Create node
+                      // Create node
                     const node = createNode(text, 0, 0, parent);
+                    console.log('Created node:', text, 'indent:', indent, 'parent:', parent ? parent.text : 'none', 'stack size:', nodeStack.length);
                     currentNode = node; // Set as current for note processing
                     
                     // Set collapsed state if this node was collapsed
                     if (collapsedTexts.includes(text)) {
                         node.collapsed = true;
                     }
-                    
-                    // Update stack
-                    nodeStack.push({ node, level: indent });
-                    
-                    // Clean up stack - remove nodes at same or deeper level
-                    while (nodeStack.length > 1 && 
-                           nodeStack[nodeStack.length - 2].level >= indent) {
-                        nodeStack.splice(nodeStack.length - 2, 1);
+                      // Update stack - remove all nodes at same or deeper level first
+                    while (nodeStack.length > 0 && 
+                           nodeStack[nodeStack.length - 1].level >= indent) {
+                        nodeStack.pop();
                     }
-                }
-            });
+                    
+                    // Now add the current node
+                    nodeStack.push({ node, level: indent });
+                }            });
             
-            autoArrange();
+            console.log('Finished parsing. Created', nodes.length, 'nodes');
+            autoArrange(true); // Force full render since nodes don't have DOM elements yet
             if (nodes.length > 0) selectNode(nodes[0]);
         }
 
