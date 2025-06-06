@@ -534,10 +534,9 @@
         </div>
     </div>
 
-    <div id="overlay" class="overlay hidden"></div>
-    <div id="delete-confirm" class="delete-confirm hidden">
+    <div id="overlay" class="overlay hidden"></div>    <div id="delete-confirm" class="delete-confirm hidden">
         <h3>Delete Node?</h3>
-        <p>This node has <span id="child-count"></span> child node(s). Delete the entire branch?</p>
+        <p>Are you sure you want to delete this node?</p>
         <div class="delete-confirm-buttons">
             <button class="cancel-btn" onclick="cancelDelete()">Cancel</button>
             <button class="confirm-btn" onclick="confirmDelete()">Delete</button>
@@ -1085,30 +1084,32 @@
                     showChildren(child);
                 }
             });
-        }
-
-        // --- Delete functionality ---
+        }        // --- Delete functionality ---
         function deleteNode(node) {
             if (!node) return;
             
-            // Check if node has children
+            // Always show confirmation dialog for all nodes
+            nodeToDelete = node;
+            const childCount = countAllDescendants(node);
+            
+            // Update the confirmation message based on whether there are children
+            const confirmDialog = document.getElementById('delete-confirm');
+            const messageElement = confirmDialog.querySelector('p');
+            
             if (node.children.length > 0) {
-                // Show confirmation dialog
-                nodeToDelete = node;
-                const childCount = countAllDescendants(node);
-                document.getElementById('child-count').textContent = childCount;
-                document.getElementById('overlay').classList.remove('hidden');
-                document.getElementById('delete-confirm').classList.remove('hidden');
-                
-                // Focus on cancel button for better accessibility
-                setTimeout(() => {
-                    const cancelBtn = document.querySelector('.delete-confirm .cancel-btn');
-                    if (cancelBtn) cancelBtn.focus();
-                }, 10);
+                messageElement.innerHTML = `This node has <span id="child-count">${childCount}</span> child node(s). Delete the entire branch?`;
             } else {
-                // No children, delete immediately
-                performDelete(node);
+                messageElement.textContent = 'Are you sure you want to delete this node?';
             }
+            
+            document.getElementById('overlay').classList.remove('hidden');
+            document.getElementById('delete-confirm').classList.remove('hidden');
+            
+            // Focus on cancel button for better accessibility
+            setTimeout(() => {
+                const cancelBtn = document.querySelector('.delete-confirm .cancel-btn');
+                if (cancelBtn) cancelBtn.focus();
+            }, 10);
         }
 
         function countAllDescendants(node) {
