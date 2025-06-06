@@ -1606,12 +1606,19 @@
                 };
                 parent.element.appendChild(btn);
                 parent.expandBtn = btn;
-            }            autoArrange(true); // Use full render for new nodes
-            // Select and start editing after positions update
-            setTimeout(() => {
-                selectNode(node);
-                startEditing(node);
-            }, 50);
+            }            // Efficient incremental update after adding child
+            autoArrange();
+            // Render the newly created child node
+            renderSubtree(node);
+            // Draw the edge connecting parent to the new node
+            drawEdge(parent, node);
+            // Smoothly update positions and edges
+            updatePositionsAndEdges();
+             // Select and start editing after positions update
+             setTimeout(() => {
+                 selectNode(node);
+                 startEditing(node);
+             }, 50);
         }
 
         function createSiblingNode(node, below = 1) {
@@ -1620,8 +1627,14 @@
             const idx = parent.children.indexOf(node);
             const newNode = createNode('New Node', 0, 0, parent);
             parent.children.splice(parent.children.indexOf(newNode), 1); // Remove from end
-            parent.children.splice(idx + below, 0, newNode);            // Full re-arrange to fix positioning
-            autoArrange(true); // Use full render for new nodes
+            parent.children.splice(idx + below, 0, newNode);            // Efficient incremental update after adding sibling
+            autoArrange();
+            // Render the newly created sibling node
+            renderSubtree(newNode);
+            // Draw the edge connecting parent to the new sibling
+            drawEdge(parent, newNode);
+            // Smoothly update positions and edges
+            updatePositionsAndEdges();
             
             // Select and start editing after positions update
             setTimeout(() => {
