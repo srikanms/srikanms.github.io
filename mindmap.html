@@ -1653,14 +1653,8 @@
             const roots = nodes.filter(n => !n.parent);
             let markdown = '# Mind Map\n\n';
             
-            // Save metadata about collapsed states
-            const collapsedNodes = nodes.filter(n => n.collapsed).map(n => n.text);
-            if (collapsedNodes.length > 0) {
-                markdown += '<!-- MINDMAP_META\n';
-                markdown += JSON.stringify({ collapsed: collapsedNodes });
-                markdown += '\n-->\n\n';
-            }
-            
+            // Removed collapsed metadata persistence
+    
             // Convert tree to markdown
             roots.forEach(root => {
                 markdown += nodeToMarkdown(root, 0);
@@ -1673,8 +1667,7 @@
             a.download = 'mindmap.md';
             a.click();
             URL.revokeObjectURL(url);
-        }
-          function nodeToMarkdown(node, level) {
+        }          function nodeToMarkdown(node, level) {
             let markdown = '';
             const indent = '  '.repeat(level);
             markdown += indent + '- ' + node.text + '\n';
@@ -1687,11 +1680,10 @@
                 });
             }
             
-            if (!node.collapsed) {
-                node.children.forEach(child => {
-                    markdown += nodeToMarkdown(child, level + 1);
-                });
-            }
+            // Always include children regardless of collapsed state
+            node.children.forEach(child => {
+                markdown += nodeToMarkdown(child, level + 1);
+            });
             
             return markdown;
         }
@@ -1724,21 +1716,12 @@
             selectedNode = null;
             nextId = 1;
             
-            // Extract metadata
-            let collapsedTexts = [];
-            const metaMatch = markdown.match(/<!-- MINDMAP_META\n(.*?)\n-->/s);
-            if (metaMatch) {
-                try {
-                    const meta = JSON.parse(metaMatch[1]);
-                    collapsedTexts = meta.collapsed || [];
-                } catch (e) {
-                    console.warn('Failed to parse metadata:', e);
-                }
-            }              // Parse markdown lines - handle both CRLF and LF line endings
+            // Extract metadata and collapsed state - removed per user request
+            // Parse markdown lines - handle both CRLF and LF line endings
             const lines = markdown.replace(/\r\n/g, '\n').split('\n');
             const nodeStack = [];
             let currentNode = null;
-              lines.forEach(line => {
+            lines.forEach(line => {
                 // Skip empty lines and metadata
                 if (!line.trim() || line.startsWith('<!--') || line.startsWith('#')) return;
                 
@@ -1788,27 +1771,12 @@
                 if (indentMatch) {
                     const indent = indentMatch[1].length / 2;
                     const text = indentMatch[2].trim();
-                      // Find parent based on indentation
+                    // Find parent based on indentation
                     let parent = null;
-                    if (indent > 0 && nodeStack.length > 0) {
-                        // Find the closest parent at the correct level
-                        for (let i = nodeStack.length - 1; i >= 0; i--) {
-                            if (nodeStack[i].level < indent) {
-                                parent = nodeStack[i].node;
-                                break;
-                            }
-                        }
-                    }
-                      // Create node
+                    // Create node
                     const node = createNode(text, 0, 0, parent);
-                    console.log('Created node:', text, 'indent:', indent, 'parent:', parent ? parent.text : 'none', 'stack size:', nodeStack.length);
-                    currentNode = node; // Set as current for note processing
-                    
-                    // Set collapsed state if this node was collapsed
-                    if (collapsedTexts.includes(text)) {
-                        node.collapsed = true;
-                    }
-                      // Update stack - remove all nodes at same or deeper level first
+                    currentNode = node;
+                    // Update stack - remove all nodes at same or deeper level first
                     while (nodeStack.length > 0 && 
                            nodeStack[nodeStack.length - 1].level >= indent) {
                         nodeStack.pop();
