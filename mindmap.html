@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -61,7 +62,8 @@
 
         #mindmap-inner {
             position: absolute;
-            top: 0; left: 0;
+            top: 0;
+            left: 0;
             will-change: transform;
             width: 100%;
             height: 100%;
@@ -302,9 +304,13 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.3);
             z-index: 1999;
-        }        .hidden {
+        }
+
+        .hidden {
             display: none !important;
-        }        /* Note feature styles - only show when note exists */
+        }
+
+        /* Note feature styles - only show when note exists */
         .note-indicator {
             position: absolute;
             top: -12px;
@@ -491,8 +497,101 @@
             background: #c53030;
             border-color: #c53030;
         }
+
+        /* Hover controls for node creation */
+        .hover-control {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: rgba(66, 153, 225, 0.1);
+            border: 1px solid rgba(66, 153, 225, 0.3);
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            color: #4299e1;
+            z-index: 30;
+            transition: all 0.2s ease;
+        }
+
+        .hover-control:hover {
+            background: rgba(66, 153, 225, 0.2);
+            border-color: rgba(66, 153, 225, 0.6);
+            transform: scale(1.1);
+        }
+
+        .hover-control.right {
+            right: -36px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .hover-control.right:hover {
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .hover-control.down {
+            bottom: -36px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .hover-control.down:hover {
+            transform: translateX(-50%) scale(1.1);
+        }
+
+        .hover-control.up {
+            top: -36px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .hover-control.up:hover {
+            transform: translateX(-50%) scale(1.1);
+        }
+
+        /* Create bridge areas between node and controls to prevent hover loss */
+        .hover-control.right::before {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 24px;
+            left: -12px;
+            top: 0;
+            background: transparent;
+        }
+
+        .hover-control.up::before {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 12px;
+            left: 0;
+            bottom: -12px;
+            background: transparent;
+        }
+
+        .hover-control.down::before {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 12px;
+            left: 0;
+            top: -12px;
+            background: transparent;
+        }
+
+        /* Show controls on node hover or when hovering controls themselves */
+        .node:hover .hover-control,
+        .hover-control:hover {
+            display: flex !important;
+        }
     </style>
 </head>
+
 <body>
     <div class="toolbar">
         <button onclick="saveMindMapAsMarkdown()">📝 Save Markdown</button>
@@ -503,9 +602,8 @@
         <div id="mindmap-inner">
             <svg id="canvas" width="100%" height="100%">
                 <defs>
-                    <marker id="arrowhead" markerWidth="10" markerHeight="7" 
-                            refX="9" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="#4299e1" opacity="0.8"/>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#4299e1" opacity="0.8" />
                     </marker>
                 </defs>
             </svg>
@@ -519,7 +617,8 @@
                 <span class="instructions-hint">(click to expand)</span>
             </div>
             <span class="instructions-toggle">▼</span>
-        </div>        <div class="instructions-content">
+        </div>
+        <div class="instructions-content">
             <div>Click/Enter: Create first node</div>
             <div>Enter: Edit selected node</div>
             <div>N: Add/edit note for selected node</div>
@@ -534,7 +633,8 @@
         </div>
     </div>
 
-    <div id="overlay" class="overlay hidden"></div>    <div id="delete-confirm" class="delete-confirm hidden">
+    <div id="overlay" class="overlay hidden"></div>
+    <div id="delete-confirm" class="delete-confirm hidden">
         <h3>Delete Node?</h3>
         <p>Are you sure you want to delete this node?</p>
         <div class="delete-confirm-buttons">
@@ -553,7 +653,8 @@
             <textarea id="note-textarea" class="note-textarea" placeholder="Add your note here..."></textarea>
         </div>
         <div class="note-modal-footer">
-            <button class="note-delete-btn" onclick="deleteNote()" id="note-delete-btn" style="display: none;">Delete Note</button>
+            <button class="note-delete-btn" onclick="deleteNote()" id="note-delete-btn" style="display: none;">Delete
+                Note</button>
             <button class="note-cancel-btn" onclick="closeNoteModal()">Cancel</button>
             <button class="note-save-btn" onclick="saveNote()">Save Note</button>
         </div>
@@ -597,7 +698,7 @@
                 canvasContainer.style.cursor = 'grabbing';
             }
         });
-        
+
         window.addEventListener('mousemove', e => {
             if (isPanning) {
                 pan.x = dragStart.x + (e.clientX - panStart.x);
@@ -605,12 +706,12 @@
                 applyTransform();
             }
         });
-        
+
         window.addEventListener('mouseup', e => {
             isPanning = false;
             canvasContainer.style.cursor = 'grab';
         });
-        
+
         canvasContainer.addEventListener('wheel', e => {
             e.preventDefault();
             const scale = Math.exp(-e.deltaY * 0.001);
@@ -635,7 +736,7 @@
                 selectNode(node);
                 startEditing(node);
             }, 50);
-        }function createNode(text, x, y, parent) {
+        } function createNode(text, x, y, parent) {
             const node = {
                 id: nextId++,
                 text,
@@ -670,7 +771,7 @@
                 if (node.element) {
                     node.element.style.left = node.x + 'px';
                     node.element.style.top = node.y + 'px';
-                    
+
                     // Update visibility based on collapsed state
                     if (isNodeHidden(node)) {
                         node.element.style.display = 'none';
@@ -679,7 +780,7 @@
                     }
                 }
             });
-            
+
             // Smoothly update edges without clearing everything
             updateEdges();
         }
@@ -688,7 +789,7 @@
             // Remove existing edges but keep defs
             const edges = canvas.querySelectorAll('.edge');
             edges.forEach(edge => edge.remove());
-            
+
             // Redraw edges
             nodes.forEach(node => {
                 if (node.parent && !isNodeHidden(node)) {
@@ -725,7 +826,7 @@
             nodes.forEach(node => {
                 if (!node.parent) renderSubtree(node);
             });
-            
+
             // Render edges after all nodes are rendered
             setTimeout(() => {
                 nodes.forEach(node => {
@@ -748,30 +849,30 @@
             nodeEl.className = 'node';
             nodeEl.style.left = node.x + 'px';
             nodeEl.style.top = node.y + 'px';
-            
+
             // Better text handling
             const textContent = node.text || 'New Node';
             nodeEl.textContent = textContent;
-            
+
             // Adjust width based on text length
             const textLength = textContent.length;
             if (textLength > 15) {
                 nodeEl.style.width = Math.min(200, Math.max(120, textLength * 8)) + 'px';
             }
-            
+
             if (selectedNode === node) nodeEl.classList.add('selected');
-            if (editingNode === node) nodeEl.classList.add('editing');            nodeEl.onclick = e => {
+            if (editingNode === node) nodeEl.classList.add('editing'); nodeEl.onclick = e => {
                 e.stopPropagation();
                 selectNode(node);
             };
-            
+
             // Add right-click context menu
             nodeEl.oncontextmenu = e => {
                 e.preventDefault();
                 e.stopPropagation();
                 showContextMenu(e, node);
             };
-              // Expand/collapse button
+            // Expand/collapse button
             if (node.children.length > 0) {
                 const btn = document.createElement('button');
                 btn.className = 'expand-btn';
@@ -782,7 +883,7 @@
                 };
                 nodeEl.appendChild(btn);
                 node.expandBtn = btn;
-            }              // Note indicator - only show when note exists
+            }            // Note indicator - only show when note exists
             if (node.note && node.note.trim()) {
                 const noteIndicator = document.createElement('div');
                 noteIndicator.className = 'note-indicator has-note';
@@ -796,28 +897,109 @@
                 };
                 nodeEl.appendChild(noteIndicator);
             }
-            
-            node.element = nodeEl;
-            mindmapInner.appendChild(nodeEl);
 
-            if (!node.collapsed) {
+            // Add hover controls for node creation
+            addHoverControls(nodeEl, node);
+
+            node.element = nodeEl;
+            mindmapInner.appendChild(nodeEl); if (!node.collapsed) {
                 node.children.forEach(child => renderSubtree(child));
+            }
+        } 
+        
+        function addHoverControls(nodeEl, node) {
+            const isRoot = !node.parent;
+            const hasChildren = node.children.length > 0;
+
+            // Remove all previous hover controls if any
+            nodeEl.querySelectorAll('.hover-control').forEach(ctrl => ctrl.remove());
+
+            if (hasChildren) {
+                // Any node with children: only show up/down controls for non-root nodes
+                if (!isRoot) {
+                    const upControl = document.createElement('div');
+                    upControl.className = 'hover-control up';
+                    upControl.innerHTML = '+';
+                    upControl.title = 'Add sibling above';
+                    upControl.onclick = e => {
+                        e.stopPropagation();
+                        createSiblingNode(node, 0);
+                    };
+                    nodeEl.appendChild(upControl);
+
+                    const downControl = document.createElement('div');
+                    downControl.className = 'hover-control down';
+                    downControl.innerHTML = '+';
+                    downControl.title = 'Add sibling below';
+                    downControl.onclick = e => {
+                        e.stopPropagation();
+                        createSiblingNode(node, 1);
+                    };
+                    nodeEl.appendChild(downControl);
+                }
+                // No right control for any node with children
+                return;
+            }
+
+            // Node without children
+            if (isRoot) {
+                // Root node without children: show right control only
+                const rightControl = document.createElement('div');
+                rightControl.className = 'hover-control right';
+                rightControl.innerHTML = '+';
+                rightControl.title = 'Add child node';
+                rightControl.onclick = e => {
+                    e.stopPropagation();
+                    createChildNode(node);
+                };
+                nodeEl.appendChild(rightControl);
+            } else {
+                // Non-root node without children: show all three controls
+                const rightControl = document.createElement('div');
+                rightControl.className = 'hover-control right';
+                rightControl.innerHTML = '+';
+                rightControl.title = 'Add child node';
+                rightControl.onclick = e => {
+                    e.stopPropagation();
+                    createChildNode(node);
+                };
+                nodeEl.appendChild(rightControl);
+
+                const upControl = document.createElement('div');
+                upControl.className = 'hover-control up';
+                upControl.innerHTML = '+';
+                upControl.title = 'Add sibling above';
+                upControl.onclick = e => {
+                    e.stopPropagation();
+                    createSiblingNode(node, 0);
+                };
+                nodeEl.appendChild(upControl);
+
+                const downControl = document.createElement('div');
+                downControl.className = 'hover-control down';
+                downControl.innerHTML = '+';
+                downControl.title = 'Add sibling below';
+                downControl.onclick = e => {
+                    e.stopPropagation();
+                    createSiblingNode(node, 1);
+                };
+                nodeEl.appendChild(downControl);
             }
         }
 
         function drawEdge(parent, child) {
             if (!parent.element || !child.element) return;
-            
+
             const parentRect = parent.element.getBoundingClientRect();
             const childRect = child.element.getBoundingClientRect();
             const containerRect = mindmapInner.getBoundingClientRect();
-            
+
             // Calculate positions relative to the mindmap container
             const startX = (parentRect.right - containerRect.left) / zoom;
             const startY = (parentRect.top + parentRect.height / 2 - containerRect.top) / zoom;
             const endX = (childRect.left - containerRect.left) / zoom;
             const endY = (childRect.top + childRect.height / 2 - containerRect.top) / zoom;
-            
+
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             const midX = (startX + endX) / 2;
             path.setAttribute('d', `M${startX},${startY} C${midX},${startY} ${midX},${endY} ${endX},${endY}`);
@@ -832,7 +1014,7 @@
             if (nodes.length === 0) return;
             // Find root(s)
             const roots = nodes.filter(n => !n.parent);
-            
+
             // If we have existing roots, preserve their viewport position
             let preservedRootPosition = null;
             if (roots.length > 0 && roots[0].element) {
@@ -843,7 +1025,7 @@
                     y: (rootRect.top - containerRect.top) / zoom
                 };
             }
-              // Arrange multiple roots with proper spacing on the left side
+            // Arrange multiple roots with proper spacing on the left side
             const leftMargin = 200; // Consistent left margin
             let currentY = 40;
             roots.forEach(root => {
@@ -857,12 +1039,12 @@
                 }
                 currentY += subtreeHeight + 60; // Extra spacing between root trees
             });
-              // Don't center the mindmap - let it grow from left to right
+            // Don't center the mindmap - let it grow from left to right
             // Only center vertically if this is initial load and no preserved position
             if (!preservedRootPosition && nodes.length > 0) {
                 centerMindmapVertically();
             }
-            
+
             // Use appropriate update method based on whether we need full render
             if (fullRender) {
                 scheduleRender();
@@ -873,13 +1055,13 @@
 
         function measureSubtreeHeight(node) {
             if (node.collapsed || node.children.length === 0) return 80;
-            
+
             // Calculate the height needed for all children
             const childHeights = node.children.map(child => measureSubtreeHeight(child));
             const totalChildHeight = childHeights.reduce((sum, h) => sum + h, 0);
             const spacing = Math.max(20, 80 / node.children.length);
             const totalSpacing = Math.max(0, (node.children.length - 1) * spacing);
-            
+
             // Return the maximum of node's own height or the total height of its children
             return Math.max(80, totalChildHeight + totalSpacing);
         }
@@ -891,17 +1073,17 @@
                 node.x = x;
                 node.y = y;
             }
-            
+
             if (node.collapsed || node.children.length === 0) return;
-            
+
             // Calculate total height needed for all children
             const childHeights = node.children.map(child => measureSubtreeHeight(child));
             const totalHeight = childHeights.reduce((sum, h) => sum + h, 0);
             const spacing = Math.max(20, 80 / node.children.length); // Dynamic spacing based on number of children
-            
+
             // Start positioning children from the top of the allocated space
             let currentY = node.y - totalHeight / 2;
-            
+
             node.children.forEach((child, index) => {
                 const childHeight = childHeights[index];
                 // Position child at the center of its allocated height
@@ -910,7 +1092,7 @@
                 // Move to next child's position
                 currentY += childHeight + spacing;
             });
-        }        function centerMindmap() {
+        } function centerMindmap() {
             // Compute bounding box of all visible nodes
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             nodes.forEach(n => {
@@ -966,7 +1148,7 @@
         function startEditing(node) {
             if (editingNode === node) return;
             editingNode = node;
-            
+
             // Don't re-render, just update the node in place
             if (node.element) {
                 node.element.classList.add('editing');
@@ -989,26 +1171,26 @@
                 input.focus();
                 input.select();
             }
-        }        function stopEditing(node, value) {
+        } function stopEditing(node, value) {
             node.text = value.trim() || 'New Idea';
             editingNode = null;
-            
+
             // Don't re-render, just update the node in place
             if (node.element) {
                 node.element.classList.remove('editing');
-                
+
                 // Clear all content first
                 node.element.innerHTML = '';
-                
+
                 // Set the text content properly
                 node.element.textContent = node.text;
-                
+
                 // Adjust width based on text length
                 const textLength = node.text.length;
                 if (textLength > 15) {
                     node.element.style.width = Math.min(200, Math.max(120, textLength * 8)) + 'px';
                 }
-                
+
                 // Re-add expand button if needed
                 if (node.children.length > 0) {
                     const btn = document.createElement('button');
@@ -1020,7 +1202,7 @@
                     };
                     node.element.appendChild(btn);
                     node.expandBtn = btn;
-                }                  // Re-add note indicator - only show when note exists
+                }                // Re-add note indicator - only show when note exists
                 if (node.note && node.note.trim()) {
                     const noteIndicator = document.createElement('div');
                     noteIndicator.className = 'note-indicator has-note';
@@ -1034,6 +1216,9 @@
                     };
                     node.element.appendChild(noteIndicator);
                 }
+
+                // Re-add hover controls
+                addHoverControls(node.element, node);
             }
         }
 
@@ -1044,7 +1229,7 @@
             if (node.expandBtn) {
                 node.expandBtn.textContent = node.collapsed ? '+' : '−';
             }
-            
+
             // Hide/show children without full re-render
             if (node.collapsed) {
                 // Hide all descendants
@@ -1061,11 +1246,11 @@
                 arrangeSubtree(root, leftMargin, y + 40, 0);
                 y += subtreeHeight + 40;
             });
-            
+
             // Use efficient update to prevent flickering
             updatePositionsAndEdges();
         }
-        
+
         function hideDescendants(node) {
             node.children.forEach(child => {
                 if (child.element) {
@@ -1074,7 +1259,7 @@
                 hideDescendants(child);
             });
         }
-        
+
         function showChildren(node) {
             node.children.forEach(child => {
                 if (child.element) {
@@ -1087,24 +1272,24 @@
         }        // --- Delete functionality ---
         function deleteNode(node) {
             if (!node) return;
-            
+
             // Always show confirmation dialog for all nodes
             nodeToDelete = node;
             const childCount = countAllDescendants(node);
-            
+
             // Update the confirmation message based on whether there are children
             const confirmDialog = document.getElementById('delete-confirm');
             const messageElement = confirmDialog.querySelector('p');
-            
+
             if (node.children.length > 0) {
                 messageElement.innerHTML = `This node has <span id="child-count">${childCount}</span> child node(s). Delete the entire branch?`;
             } else {
                 messageElement.textContent = 'Are you sure you want to delete this node?';
             }
-            
+
             document.getElementById('overlay').classList.remove('hidden');
             document.getElementById('delete-confirm').classList.remove('hidden');
-            
+
             // Focus on cancel button for better accessibility
             setTimeout(() => {
                 const cancelBtn = document.querySelector('.delete-confirm .cancel-btn');
@@ -1148,7 +1333,7 @@
                 if (index > -1) {
                     node.parent.children.splice(index, 1);
                 }
-                
+
                 // Remove expand button if parent now has no children
                 if (node.parent.children.length === 0 && node.parent.expandBtn) {
                     node.parent.expandBtn.remove();
@@ -1163,7 +1348,7 @@
                 });
             };
             collectDescendants(node);
-              // Remove DOM elements immediately
+            // Remove DOM elements immediately
             toRemove.forEach(n => {
                 if (n.element) {
                     n.element.remove();
@@ -1197,7 +1382,7 @@
             }
         }
 
-                function cancelDelete() {
+        function cancelDelete() {
             nodeToDelete = null;
             document.getElementById('overlay').classList.add('hidden');
             document.getElementById('delete-confirm').classList.add('hidden');
@@ -1205,15 +1390,15 @@
 
         // --- Context Menu functionality ---
         let contextMenu = null;
-        
+
         function showContextMenu(e, node) {
             // Remove existing context menu if any
             hideContextMenu();
-            
+
             // Create context menu
             contextMenu = document.createElement('div');
             contextMenu.className = 'context-menu';
-            
+
             // Add note option (only show if node doesn't have a note)
             if (!node.note || !node.note.trim()) {
                 const addNoteItem = document.createElement('div');
@@ -1234,33 +1419,33 @@
                 };
                 contextMenu.appendChild(editNoteItem);
             }
-            
+
             // Position context menu
             document.body.appendChild(contextMenu);
-            
+
             // Calculate position to keep menu within viewport
             const menuRect = contextMenu.getBoundingClientRect();
             let x = e.clientX;
             let y = e.clientY;
-            
+
             if (x + menuRect.width > window.innerWidth) {
                 x = window.innerWidth - menuRect.width - 10;
             }
             if (y + menuRect.height > window.innerHeight) {
                 y = window.innerHeight - menuRect.height - 10;
             }
-            
+
             contextMenu.style.left = x + 'px';
             contextMenu.style.top = y + 'px';
         }
-        
+
         function hideContextMenu() {
             if (contextMenu) {
                 contextMenu.remove();
                 contextMenu = null;
             }
         }
-        
+
         // Hide context menu when clicking elsewhere
         document.addEventListener('click', hideContextMenu);
         document.addEventListener('contextmenu', (e) => {
@@ -1276,19 +1461,19 @@
             const modal = document.getElementById('note-modal');
             const textarea = document.getElementById('note-textarea');
             const deleteBtn = document.getElementById('note-delete-btn');
-            
+
             textarea.value = node.note || '';
-            
+
             // Show/hide delete button based on whether note exists
             if (node.note && node.note.trim()) {
                 deleteBtn.style.display = 'inline-block';
             } else {
                 deleteBtn.style.display = 'none';
             }
-            
+
             modal.classList.remove('hidden');
             document.getElementById('overlay').classList.remove('hidden');
-            
+
             // Add keyboard handler for the textarea
             textarea.onkeydown = (e) => {
                 if (e.key === 'Escape') {
@@ -1300,16 +1485,17 @@
                 }
                 e.stopPropagation();
             };
-            
+
             setTimeout(() => {
                 textarea.focus();
-                textarea.select();            }, 100);
-        }        function closeNoteModal() {
+                textarea.select();
+            }, 100);
+        } function closeNoteModal() {
             const modal = document.getElementById('note-modal');
             const textarea = document.getElementById('note-textarea');
             modal.classList.add('hidden');
             document.getElementById('overlay').classList.add('hidden');
-            
+
             // Remove the keyboard handler
             textarea.onkeydown = null;
             currentNoteNode = null;
@@ -1348,7 +1534,7 @@
                 }
                 return; // Don't process other keys when note modal is open
             }
-            
+
             // Handle escape key for delete confirmation
             if (!document.getElementById('delete-confirm').classList.contains('hidden')) {
                 if (e.key === 'Escape') {
@@ -1357,7 +1543,7 @@
                 }
                 return; // Don't process other keys when dialog is open
             }
-            
+
             if (nodes.length === 0 && e.key === 'Enter') {
                 createFirstNode({ clientX: window.innerWidth / 2, clientY: window.innerHeight / 2 });
                 return;
@@ -1403,7 +1589,7 @@
                         // Find child closest to current Y position
                         let closestChild = selectedNode.children[0];
                         let minDistance = Math.abs(closestChild.y - selectedNode.y);
-                        
+
                         selectedNode.children.forEach(child => {
                             const distance = Math.abs(child.y - selectedNode.y);
                             if (distance < minDistance) {
@@ -1446,7 +1632,8 @@
                     } else {
                         createChildNode(selectedNode);
                     }
-                    e.preventDefault();                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                } else if (e.key === 'ArrowLeft') {
                     // Collapse current node if it has children, otherwise collapse parent
                     if (selectedNode.children.length > 0) {
                         // Current node has children
@@ -1536,7 +1723,7 @@
                 // Group by similar Y position (within 30px)
                 const firstY = candidates[0].y;
                 const similarY = candidates.filter(n => Math.abs(n.y - firstY) < 30);
-                
+
                 // Among those, find closest X
                 similarY.sort((a, b) => Math.abs(a.x - currentX) - Math.abs(b.x - currentX));
                 return similarY[0];
@@ -1549,7 +1736,7 @@
             // Get all visible nodes at the same generation level (siblings and cousins)
             const visibleNodes = [];
             const fromLevel = getNodeLevel(fromNode);
-            
+
             nodes.forEach(node => {
                 if (isNodeVisible(node) && node !== fromNode && getNodeLevel(node) === fromLevel) {
                     visibleNodes.push(node);
@@ -1557,7 +1744,7 @@
             });
 
             const currentY = fromNode.y;
-            
+
             // Filter nodes in the target direction
             let candidates = [];
             if (direction === 'up') {
@@ -1595,7 +1782,7 @@
                 }
             }
             const node = createNode('New Node', 0, 0, parent);
-            
+
             // If parent didn't have children before, it needs an expand button now
             if (parent.children.length === 1 && parent.element && !parent.expandBtn) {
                 const btn = document.createElement('button');
@@ -1615,11 +1802,11 @@
             drawEdge(parent, node);
             // Smoothly update positions and edges
             updatePositionsAndEdges();
-             // Select and start editing after positions update
-             setTimeout(() => {
-                 selectNode(node);
-                 startEditing(node);
-             }, 50);
+            // Select and start editing after positions update
+            setTimeout(() => {
+                selectNode(node);
+                startEditing(node);
+            }, 50);
         }
 
         function createSiblingNode(node, below = 1) {
@@ -1636,7 +1823,7 @@
             drawEdge(parent, newNode);
             // Smoothly update positions and edges
             updatePositionsAndEdges();
-            
+
             // Select and start editing after positions update
             setTimeout(() => {
                 selectNode(newNode);
@@ -1646,20 +1833,20 @@
 
         // --- Save/Load ---
         // Remove saveMindMap and loadMindMap functions
-        
+
         // --- Markdown Save/Load ---
         function saveMindMapAsMarkdown() {
             // Find root nodes
             const roots = nodes.filter(n => !n.parent);
             let markdown = '# Mind Map\n\n';
-            
+
             // Removed collapsed metadata persistence
-    
+
             // Convert tree to markdown
             roots.forEach(root => {
                 markdown += nodeToMarkdown(root, 0);
             });
-            
+
             const blob = new Blob([markdown], { type: 'text/markdown' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1667,11 +1854,11 @@
             a.download = 'mindmap.md';
             a.click();
             URL.revokeObjectURL(url);
-        }          function nodeToMarkdown(node, level) {
+        } function nodeToMarkdown(node, level) {
             let markdown = '';
             const indent = '  '.repeat(level);
             markdown += indent + '- ' + node.text + '\n';
-            
+
             // Add note if it exists
             if (node.note && node.note.trim()) {
                 const noteLines = node.note.trim().split('\n');
@@ -1679,15 +1866,15 @@
                     markdown += indent + '  > ' + line + '\n';
                 });
             }
-            
+
             // Always include children regardless of collapsed state
             node.children.forEach(child => {
                 markdown += nodeToMarkdown(child, level + 1);
             });
-            
+
             return markdown;
         }
-        
+
         function loadMindMapFromMarkdown() {
             const input = document.createElement('input');
             input.type = 'file';
@@ -1695,7 +1882,7 @@
             input.onchange = e => {
                 const file = e.target.files[0];
                 if (file) {
-                    const reader = new FileReader();                    reader.onload = e => {
+                    const reader = new FileReader(); reader.onload = e => {
                         try {
                             console.log('Loading markdown file...', e.target.result.substring(0, 200) + '...');
                             parseMarkdownToMindMap(e.target.result);
@@ -1710,12 +1897,12 @@
             };
             input.click();
         }
-          function parseMarkdownToMindMap(markdown) {
+        function parseMarkdownToMindMap(markdown) {
             console.log('Parsing markdown:', markdown.substring(0, 100) + '...');
             nodes = [];
             selectedNode = null;
             nextId = 1;
-            
+
             // Extract metadata and collapsed state - removed per user request
             // Parse markdown lines - handle both CRLF and LF line endings
             const lines = markdown.replace(/\r\n/g, '\n').split('\n');
@@ -1724,14 +1911,14 @@
             lines.forEach(line => {
                 // Skip empty lines and metadata
                 if (!line.trim() || line.startsWith('<!--') || line.startsWith('#')) return;
-                
+
                 console.log('Processing line:', line);
-                  // Check if this is a note line (indented >)
+                // Check if this is a note line (indented >)
                 const noteMatch = line.match(/^(\s*)>\s*(.*)$/);
                 if (noteMatch) {
                     const noteIndent = noteMatch[1].length / 2;
                     const noteText = noteMatch[2];
-                    
+
                     // Find the node this note belongs to based on indentation
                     let targetNode = null;
                     if (noteIndent === 0) {
@@ -1752,7 +1939,7 @@
                             }
                         }
                     }
-                    
+
                     if (targetNode) {
                         if (targetNode.note) {
                             targetNode.note += '\n' + noteText;
@@ -1765,7 +1952,7 @@
                     }
                     return;
                 }
-                
+
                 // Count indentation (2 spaces per level)
                 const indentMatch = line.match(/^(\s*)-\s*(.+)$/);
                 if (indentMatch) {
@@ -1777,15 +1964,16 @@
                     const node = createNode(text, 0, 0, parent);
                     currentNode = node;
                     // Update stack - remove all nodes at same or deeper level first
-                    while (nodeStack.length > 0 && 
-                           nodeStack[nodeStack.length - 1].level >= indent) {
+                    while (nodeStack.length > 0 &&
+                        nodeStack[nodeStack.length - 1].level >= indent) {
                         nodeStack.pop();
                     }
-                    
+
                     // Now add the current node
                     nodeStack.push({ node, level: indent });
-                }            });
-            
+                }
+            });
+
             console.log('Finished parsing. Created', nodes.length, 'nodes');
             autoArrange(true); // Force full render since nodes don't have DOM elements yet
             if (nodes.length > 0) selectNode(nodes[0]);
@@ -1811,4 +1999,5 @@
         scheduleRender();
     </script>
 </body>
+
 </html>
