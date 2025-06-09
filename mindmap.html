@@ -77,9 +77,7 @@
             height: 100%;
             pointer-events: none;
             overflow: visible;
-        }
-
-        .node {
+        }        .node {
             position: absolute;
             min-width: 120px;
             max-width: 200px;
@@ -89,7 +87,7 @@
             border-radius: 12px;
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             cursor: pointer;
             transition: border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -97,7 +95,7 @@
             font-weight: 500;
             color: #2d3748;
             padding: 8px 16px;
-            text-align: center;
+            text-align: left;
             word-wrap: break-word;
             overflow-wrap: break-word;
             hyphens: auto;
@@ -121,18 +119,17 @@
         .node.editing {
             background: #ffffff;
             border-color: #4299e1;
-        }
-
-        .node input {
+        }        .node input {
             border: none;
             outline: none;
             background: transparent;
             font-size: 14px;
             font-weight: 500;
             color: #2d3748;
-            text-align: center;
+            text-align: left;
             width: 100%;
             min-width: 100px;
+            flex: 1;
         }
 
         .expand-btn {
@@ -308,6 +305,49 @@
 
         .hidden {
             display: none !important;
+        }        /* Checkbox styles */
+        .node-checkbox {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #cbd5e0;
+            border-radius: 3px;
+            background: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            margin-right: 8px;
+        }
+
+        .node-checkbox:hover {
+            border-color: #4299e1;
+            background: #f7fafc;
+        }
+
+        .node-checkbox.checked {
+            background: #4299e1;
+            border-color: #4299e1;
+            color: white;
+        }
+
+        .node-checkbox.checked::after {
+            content: '✓';
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .node.completed {
+            opacity: 0.7;
+        }        .node.completed .node-content {
+            text-decoration: line-through;
+            color: #718096;
+        }
+
+        .node-content {
+            flex: 1;
+            text-align: left;
         }
 
         /* Note feature styles - only show when note exists */
@@ -617,10 +657,10 @@
                 <span class="instructions-hint">(click to expand)</span>
             </div>
             <span class="instructions-toggle">▼</span>
-        </div>
-        <div class="instructions-content">
+        </div>        <div class="instructions-content">
             <div>Click/Enter: Create first node</div>
             <div>Enter: Edit selected node</div>
+            <div>Space: Toggle checkbox completion</div>
             <div>N: Add/edit note for selected node</div>
             <div>Delete: Delete node</div>
             <div>Ctrl+→: Add child or Expand</div>
@@ -736,7 +776,7 @@
                 selectNode(node);
                 startEditing(node);
             }, 50);
-        } function createNode(text, x, y, parent) {
+        }        function createNode(text, x, y, parent) {
             const node = {
                 id: nextId++,
                 text,
@@ -746,7 +786,8 @@
                 collapsed: false,
                 element: null,
                 expandBtn: null,
-                note: '' // Add note property
+                note: '', // Add note property
+                completed: false // Add completed property for checkbox functionality
             };
             if (parent) parent.children.push(node);
             nodes.push(node);
@@ -841,27 +882,43 @@
             if (!node.parent) return false;
             if (node.parent.collapsed) return true;
             return isNodeHidden(node.parent);
-        }
-
-        function renderSubtree(node) {
+        }        function renderSubtree(node) {
             // Node element
             const nodeEl = document.createElement('div');
             nodeEl.className = 'node';
+            if (node.completed) nodeEl.classList.add('completed');
             nodeEl.style.left = node.x + 'px';
             nodeEl.style.top = node.y + 'px';
 
+            // Add checkbox
+            const checkbox = document.createElement('div');
+            checkbox.className = 'node-checkbox';
+            if (node.completed) checkbox.classList.add('checked');
+            checkbox.onclick = e => {
+                e.stopPropagation();
+                toggleNodeCompletion(node);
+            };
+            nodeEl.appendChild(checkbox);
+
+            // Create content wrapper for text (to apply strikethrough when completed)
+            const contentWrapper = document.createElement('span');
+            contentWrapper.className = 'node-content';
+            
             // Better text handling
             const textContent = node.text || 'New Node';
-            nodeEl.textContent = textContent;
+            contentWrapper.textContent = textContent;
+            nodeEl.appendChild(contentWrapper);
 
-            // Adjust width based on text length
+            // Adjust width based on text length (account for checkbox width)
             const textLength = textContent.length;
-            if (textLength > 15) {
-                nodeEl.style.width = Math.min(200, Math.max(120, textLength * 8)) + 'px';
+            if (textLength > 12) {
+                nodeEl.style.width = Math.min(200, Math.max(140, textLength * 8 + 32)) + 'px';
+            } else {
+                nodeEl.style.width = '140px';
             }
 
             if (selectedNode === node) nodeEl.classList.add('selected');
-            if (editingNode === node) nodeEl.classList.add('editing'); nodeEl.onclick = e => {
+            if (editingNode === node) nodeEl.classList.add('editing');nodeEl.onclick = e => {
                 e.stopPropagation();
                 selectNode(node);
             };
@@ -1133,6 +1190,25 @@
             return isNodeVisible(node.parent);
         }
 
+        // --- Checkbox functionality ---
+        function toggleNodeCompletion(node) {
+            node.completed = !node.completed;
+            
+            // Update the visual state without full re-render
+            if (node.element) {
+                const checkbox = node.element.querySelector('.node-checkbox');
+                const contentWrapper = node.element.querySelector('.node-content');
+                
+                if (node.completed) {
+                    node.element.classList.add('completed');
+                    checkbox.classList.add('checked');
+                } else {
+                    node.element.classList.remove('completed');
+                    checkbox.classList.remove('checked');
+                }
+            }
+        }
+
         // --- Node selection and editing ---
         function selectNode(node) {
             // Only update selection classes, don't re-render
@@ -1143,15 +1219,14 @@
             if (selectedNode && selectedNode.element) {
                 selectedNode.element.classList.add('selected');
             }
-        }
-
-        function startEditing(node) {
+        }        function startEditing(node) {
             if (editingNode === node) return;
             editingNode = node;
 
             // Don't re-render, just update the node in place
             if (node.element) {
                 node.element.classList.add('editing');
+                const contentWrapper = node.element.querySelector('.node-content');
                 const input = document.createElement('input');
                 input.value = node.text;
                 input.style.width = '100%';
@@ -1166,12 +1241,14 @@
                     e.stopPropagation();
                 };
                 input.onblur = () => stopEditing(node, input.value);
-                node.element.innerHTML = '';
-                node.element.appendChild(input);
+                
+                // Replace the content wrapper with input
+                contentWrapper.innerHTML = '';
+                contentWrapper.appendChild(input);
                 input.focus();
                 input.select();
             }
-        } function stopEditing(node, value) {
+        }        function stopEditing(node, value) {
             node.text = value.trim() || 'New Idea';
             editingNode = null;
 
@@ -1182,13 +1259,33 @@
                 // Clear all content first
                 node.element.innerHTML = '';
 
-                // Set the text content properly
-                node.element.textContent = node.text;
+                // Re-add checkbox
+                const checkbox = document.createElement('div');
+                checkbox.className = 'node-checkbox';
+                if (node.completed) checkbox.classList.add('checked');
+                checkbox.onclick = e => {
+                    e.stopPropagation();
+                    toggleNodeCompletion(node);
+                };
+                node.element.appendChild(checkbox);
 
-                // Adjust width based on text length
+                // Re-add content wrapper with updated text
+                const contentWrapper = document.createElement('span');
+                contentWrapper.className = 'node-content';
+                contentWrapper.textContent = node.text;
+                node.element.appendChild(contentWrapper);                // Update completed state
+                if (node.completed) {
+                    node.element.classList.add('completed');
+                } else {
+                    node.element.classList.remove('completed');
+                }
+
+                // Adjust width based on text length (account for checkbox width)
                 const textLength = node.text.length;
-                if (textLength > 15) {
-                    node.element.style.width = Math.min(200, Math.max(120, textLength * 8)) + 'px';
+                if (textLength > 12) {
+                    node.element.style.width = Math.min(200, Math.max(140, textLength * 8 + 32)) + 'px';
+                } else {
+                    node.element.style.width = '140px';
                 }
 
                 // Re-add expand button if needed
@@ -1202,7 +1299,7 @@
                     };
                     node.element.appendChild(btn);
                     node.expandBtn = btn;
-                }                // Re-add note indicator - only show when note exists
+                }// Re-add note indicator - only show when note exists
                 if (node.note && node.note.trim()) {
                     const noteIndicator = document.createElement('div');
                     noteIndicator.className = 'note-indicator has-note';
@@ -1570,12 +1667,19 @@
                     e.preventDefault();
                 }
                 return;
-            }
-
-            // Note key (N)
+            }            // Note key (N)
             if (e.key === 'n' || e.key === 'N') {
                 if (selectedNode) {
                     openNoteModal(selectedNode);
+                    e.preventDefault();
+                }
+                return;
+            }
+
+            // Checkbox toggle key (Space)
+            if (e.key === ' ') {
+                if (selectedNode) {
+                    toggleNodeCompletion(selectedNode);
                     e.preventDefault();
                 }
                 return;
@@ -1854,10 +1958,11 @@
             a.download = 'mindmap.md';
             a.click();
             URL.revokeObjectURL(url);
-        } function nodeToMarkdown(node, level) {
+        }        function nodeToMarkdown(node, level) {
             let markdown = '';
             const indent = '  '.repeat(level);
-            markdown += indent + '- ' + node.text + '\n';
+            const checkbox = node.completed ? '[x]' : '[ ]';
+            markdown += indent + '- ' + checkbox + ' ' + node.text + '\n';
 
             // Add note if it exists
             if (node.note && node.note.trim()) {
@@ -1951,18 +2056,33 @@
                         console.warn('Could not find target node for note:', noteText, 'at indent:', noteIndent);
                     }
                     return;
-                }
-
-                // Count indentation (2 spaces per level)
-                const indentMatch = line.match(/^(\s*)-\s*(.+)$/);
+                }                // Count indentation (2 spaces per level)
+                const indentMatch = line.match(/^(\s*)-\s*(\[[x\s]\])?\s*(.+)$/);
                 if (indentMatch) {
                     const indent = indentMatch[1].length / 2;
-                    const text = indentMatch[2].trim();
+                    const checkboxMatch = indentMatch[2];
+                    const text = indentMatch[3].trim();
+                    
+                    // Determine completion status from checkbox
+                    const completed = checkboxMatch && checkboxMatch.includes('x');
+                    
                     // Find parent based on indentation
                     let parent = null;
+                    if (indent > 0 && nodeStack.length > 0) {
+                        // Find the most recent node at the parent level (indent - 1)
+                        for (let i = nodeStack.length - 1; i >= 0; i--) {
+                            if (nodeStack[i].level === indent - 1) {
+                                parent = nodeStack[i].node;
+                                break;
+                            }
+                        }
+                    }
+                    
                     // Create node
                     const node = createNode(text, 0, 0, parent);
+                    node.completed = completed; // Set completion status
                     currentNode = node;
+                    
                     // Update stack - remove all nodes at same or deeper level first
                     while (nodeStack.length > 0 &&
                         nodeStack[nodeStack.length - 1].level >= indent) {
