@@ -576,9 +576,7 @@
         .note-delete-btn:hover {
             background: #c53030;
             border-color: #c53030;
-        }
-
-        /* Hover controls for node creation */
+        }        /* Hover controls for node creation */
         .hover-control {
             position: absolute;
             width: 24px;
@@ -604,7 +602,7 @@
         }
 
         .hover-control.right {
-            right: -36px;
+            right: -42px; /* Increased from -36px to -42px for more clearance */
             top: 50%;
             transform: translateY(-50%);
         }
@@ -614,7 +612,7 @@
         }
 
         .hover-control.down {
-            bottom: -36px;
+            bottom: -42px; /* Increased from -36px to -42px for more clearance */
             left: 50%;
             transform: translateX(-50%);
         }
@@ -624,7 +622,7 @@
         }
 
         .hover-control.up {
-            top: -36px;
+            top: -42px; /* Increased from -36px to -42px for more clearance */
             left: 50%;
             transform: translateX(-50%);
         }
@@ -637,9 +635,9 @@
         .hover-control.right::before {
             content: '';
             position: absolute;
-            width: 12px;
+            width: 18px; /* Increased to match new position */
             height: 24px;
-            left: -12px;
+            left: -18px; /* Adjusted for new position */
             top: 0;
             background: transparent;
         }
@@ -648,9 +646,9 @@
             content: '';
             position: absolute;
             width: 24px;
-            height: 12px;
+            height: 18px; /* Increased to match new position */
             left: 0;
-            bottom: -12px;
+            bottom: -18px; /* Adjusted for new position */
             background: transparent;
         }
 
@@ -658,9 +656,9 @@
             content: '';
             position: absolute;
             width: 24px;
-            height: 12px;
+            height: 18px; /* Increased to match new position */
             left: 0;
-            top: -12px;
+            top: -18px; /* Adjusted for new position */
             background: transparent;
         }
 
@@ -1163,7 +1161,7 @@
             }
             // Arrange multiple roots with proper spacing on the left side
             const leftMargin = 200; // Consistent left margin
-            let currentY = 40;
+            let currentY = 40; // Reduced margin from top
             roots.forEach(root => {
                 const subtreeHeight = measureSubtreeHeight(root);
                 if (preservedRootPosition && root === roots[0]) {
@@ -1173,7 +1171,7 @@
                     // Position other roots with proper spacing, aligned to left margin
                     arrangeSubtree(root, leftMargin, currentY + subtreeHeight / 2, 0);
                 }
-                currentY += subtreeHeight + 60; // Extra spacing between root trees
+                currentY += subtreeHeight + 50; // Reduced spacing between root trees
             });
             // Don't center the mindmap - let it grow from left to right
             // Only center vertically if this is initial load and no preserved position
@@ -1187,22 +1185,29 @@
             } else {
                 updatePositionsAndEdges();
             }
-        }
+        }function measureSubtreeHeight(node) {
+            if (node.collapsed || node.children.length === 0) {
+                // Base node height plus minimal space for hover controls
+                return 80 + 50; // Base height + reduced hover control clearance
+            }
 
-        function measureSubtreeHeight(node) {
-            if (node.collapsed || node.children.length === 0) return 80;
-
-            // Calculate the height needed for all children
+            // Calculate the height needed for all visible children
             const childHeights = node.children.map(child => measureSubtreeHeight(child));
             const totalChildHeight = childHeights.reduce((sum, h) => sum + h, 0);
-            const spacing = Math.max(20, 80 / node.children.length);
-            const totalSpacing = Math.max(0, (node.children.length - 1) * spacing);
+            
+            // Reduced spacing calculation for more compact layout
+            const baseSpacing = 30; // Reduced minimum spacing between children
+            const scaledSpacing = Math.max(baseSpacing, 80 / Math.sqrt(node.children.length));
+            const totalSpacing = Math.max(0, (node.children.length - 1) * scaledSpacing);
 
-            // Return the maximum of node's own height or the total height of its children
-            return Math.max(80, totalChildHeight + totalSpacing);
-        }
-
-        function arrangeSubtree(node, x, y, level) {
+            // The subtree height is the larger of:
+            // 1. The total height needed for all children plus spacing
+            // 2. The minimum height for this node including hover control clearance
+            const minNodeHeight = 80 + 50; // Reduced base height + hover control clearance
+            const totalRequiredHeight = totalChildHeight + totalSpacing;
+            
+            return Math.max(minNodeHeight, totalRequiredHeight);
+        }        function arrangeSubtree(node, x, y, level) {
             // Only update position if this is root node being initially placed
             // or if it's a child node (always update children positions)
             if (level > 0 || !node.element) {
@@ -1215,7 +1220,10 @@
             // Calculate total height needed for all children
             const childHeights = node.children.map(child => measureSubtreeHeight(child));
             const totalHeight = childHeights.reduce((sum, h) => sum + h, 0);
-            const spacing = Math.max(20, 80 / node.children.length); // Dynamic spacing based on number of children
+            
+            // Use the same reduced spacing calculation as measureSubtreeHeight
+            const baseSpacing = 30;
+            const scaledSpacing = Math.max(baseSpacing, 80 / Math.sqrt(node.children.length));
 
             // Start positioning children from the top of the allocated space
             let currentY = node.y - totalHeight / 2;
@@ -1224,19 +1232,25 @@
                 const childHeight = childHeights[index];
                 // Position child at the center of its allocated height
                 const childCenterY = currentY + childHeight / 2;
-                arrangeSubtree(child, node.x + 280, childCenterY, level + 1);
+                
+                // Reduced horizontal spacing for more compact layout
+                // Base spacing (280px) + hover control space (20px) = 300px
+                arrangeSubtree(child, node.x + 300, childCenterY, level + 1);
+                
                 // Move to next child's position
-                currentY += childHeight + spacing;
+                currentY += childHeight + scaledSpacing;
             });
-        } function centerMindmap() {
-            // Compute bounding box of all visible nodes
+        }        function centerMindmap() {
+            // Compute bounding box of all visible nodes, accounting for hover controls
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             nodes.forEach(n => {
                 if (isNodeVisible(n)) {
-                    minX = Math.min(minX, n.x);
-                    minY = Math.min(minY, n.y);
-                    maxX = Math.max(maxX, n.x + 120);
-                    maxY = Math.max(maxY, n.y + 40);
+                    // Reduced hover control margin for more compact centering
+                    const hoverMargin = 25; // Reduced hover control margin
+                    minX = Math.min(minX, n.x - hoverMargin);
+                    minY = Math.min(minY, n.y - hoverMargin);
+                    maxX = Math.max(maxX, n.x + 200 + hoverMargin); // Max node width + hover margin
+                    maxY = Math.max(maxY, n.y + 40 + hoverMargin); // Node height + hover margin
                 }
             });
             if (minX === Infinity) return;
@@ -1248,12 +1262,13 @@
         }
 
         function centerMindmapVertically() {
-            // Only center vertically, keep left alignment
+            // Only center vertically, keep left alignment, account for hover controls
             let minY = Infinity, maxY = -Infinity;
             nodes.forEach(n => {
                 if (isNodeVisible(n)) {
-                    minY = Math.min(minY, n.y);
-                    maxY = Math.max(maxY, n.y + 40);
+                    const hoverMargin = 25; // Reduced hover control margin
+                    minY = Math.min(minY, n.y - hoverMargin);
+                    maxY = Math.max(maxY, n.y + 40 + hoverMargin);
                 }
             });
             if (minY === Infinity) return;
@@ -1406,9 +1421,7 @@
                 // Re-add hover controls
                 addHoverControls(node.element, node);
             }
-        }
-
-        // --- Expand/collapse ---
+        }        // --- Expand/collapse ---
         function toggleCollapse(node) {
             node.collapsed = !node.collapsed;
             // Update button without re-rendering
@@ -1423,14 +1436,17 @@
             } else {
                 // Show immediate children (they might have their own collapsed state)
                 showChildren(node);
-            }              // Rearrange positions and redraw edges
+            }              
+            
+            // Rearrange positions and redraw edges with reduced spacing
             const roots = nodes.filter(n => !n.parent);
             const leftMargin = 200; // Use consistent left margin
-            let y = 0;
+            let currentY = 40; // Reduced margin from top
+            
             roots.forEach(root => {
                 const subtreeHeight = measureSubtreeHeight(root);
-                arrangeSubtree(root, leftMargin, y + 40, 0);
-                y += subtreeHeight + 40;
+                arrangeSubtree(root, leftMargin, currentY + subtreeHeight / 2, 0);
+                currentY += subtreeHeight + 50; // Reduced spacing between root trees
             });
 
             // Use efficient update to prevent flickering
