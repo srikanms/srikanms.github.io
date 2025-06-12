@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mind Map Editor - Published 2025-06-11 19:29:59 UTC</title>
+    <title>Mind Map Editor</title>
     <style>
         * {
             margin: 0;
@@ -767,7 +767,9 @@
         </div>
     </div>
 
-    <script>        // --- State ---
+    <!-- Published: 2025-06-12 15:01:27 UTC -->
+        <script>
+        const PUBLISHED_TIMESTAMP = '2025-06-12 15:01:27 UTC';        // --- State ---
         let nodes = [];
         let selectedNode = null;
         let nextId = 1;
@@ -1752,6 +1754,28 @@
         let currentFileName = null; // Track current file name
 
         // File status functions
+        function updatePageTitle() {
+            const baseTitle = 'Mind Map Editor';
+            
+            let title = '';
+            if (currentFileName) {
+                title = currentFileName;
+                if (hasUnsavedChanges) {
+                    title += '*';
+                }
+            } else {
+                title = 'Untitled';
+                if (hasUnsavedChanges) {
+                    title += '*';
+                }
+            }
+            
+            // Use published timestamp if available (set by GitHub Action)
+            const publishedTimestamp = typeof PUBLISHED_TIMESTAMP !== 'undefined' ? ` - Published ${PUBLISHED_TIMESTAMP}` : '';
+            
+            document.title = `${title} - ${baseTitle}${publishedTimestamp}`;
+        }
+
         function updateFileStatus() {
             const fileStatusEl = document.getElementById('file-status');
             const fileNameEl = document.getElementById('file-name');
@@ -1766,6 +1790,9 @@
                 fileNameEl.textContent = 'Untitled';
                 unsavedIndicatorEl.style.display = hasUnsavedChanges ? 'inline' : 'none';
             }
+            
+            // Update page title whenever file status changes
+            updatePageTitle();
         }
 
         function markAsChanged() {
@@ -2412,7 +2439,7 @@
         document.getElementById('delete-confirm').classList.add('hidden');        // Initial render
         scheduleRender();
         
-        // Initialize file status display
+        // Initialize file status display and page title
         updateFileStatus();
     </script>
 </body>
