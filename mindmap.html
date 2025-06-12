@@ -767,9 +767,10 @@
         </div>
     </div>
 
-    <!-- Published: 2025-06-12 15:01:27 UTC -->
-        <script>
-        const PUBLISHED_TIMESTAMP = '2025-06-12 15:01:27 UTC';        // --- State ---
+    <!-- Published: 2025-06-12 15:18:35 UTC -->
+    <script>
+        const PUBLISHED_TIMESTAMP = '2025-06-12 15:18:35 UTC';
+        // --- State ---
         let nodes = [];
         let selectedNode = null;
         let nextId = 1;
@@ -1755,6 +1756,9 @@
 
         // File status functions
         function updatePageTitle() {
+            // First, clear any existing title to ensure clean slate
+            document.title = '';
+            
             const baseTitle = 'Mind Map Editor';
             
             let title = '';
@@ -1773,6 +1777,7 @@
             // Use published timestamp if available (set by GitHub Action)
             const publishedTimestamp = typeof PUBLISHED_TIMESTAMP !== 'undefined' ? ` - Published ${PUBLISHED_TIMESTAMP}` : '';
             
+            // Set the complete new title
             document.title = `${title} - ${baseTitle}${publishedTimestamp}`;
         }
 
