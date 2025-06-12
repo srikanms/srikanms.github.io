@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mind Map Editor</title>
+    <title></title>
     <style>
         * {
             margin: 0;
@@ -767,9 +767,9 @@
         </div>
     </div>
 
-    <!-- Published: 2025-06-12 15:18:35 UTC -->
+    <!-- Published: 2025-06-12 15:26:38 UTC -->
     <script>
-        const PUBLISHED_TIMESTAMP = '2025-06-12 15:18:35 UTC';
+        const PUBLISHED_TIMESTAMP = '2025-06-12 15:26:38 UTC';
         // --- State ---
         let nodes = [];
         let selectedNode = null;
@@ -1756,9 +1756,6 @@
 
         // File status functions
         function updatePageTitle() {
-            // First, clear any existing title to ensure clean slate
-            document.title = '';
-            
             const baseTitle = 'Mind Map Editor';
             
             let title = '';
@@ -1777,8 +1774,22 @@
             // Use published timestamp if available (set by GitHub Action)
             const publishedTimestamp = typeof PUBLISHED_TIMESTAMP !== 'undefined' ? ` - Published ${PUBLISHED_TIMESTAMP}` : '';
             
-            // Set the complete new title
-            document.title = `${title} - ${baseTitle}${publishedTimestamp}`;
+            // Set the complete new title - PWA-friendly approach
+            const newTitle = `${title} - ${baseTitle}${publishedTimestamp}`;
+            
+            // Multiple attempts to ensure title gets set in PWA environment
+            document.title = newTitle;
+            
+            // Force title update with setTimeout for PWA compatibility
+            setTimeout(() => {
+                document.title = newTitle;
+            }, 0);
+            
+            // Also try updating the title element directly
+            const titleElement = document.querySelector('title');
+            if (titleElement) {
+                titleElement.textContent = newTitle;
+            }
         }
 
         function updateFileStatus() {
@@ -2446,6 +2457,27 @@
         
         // Initialize file status display and page title
         updateFileStatus();
+        
+        // Additional PWA title fix - ensure title is set after all resources load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                updatePageTitle();
+            }, 100);
+        });
+        
+        // Also handle document ready state changes for PWA compatibility
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => {
+                    updatePageTitle();
+                }, 50);
+            });
+        } else {
+            // Document already loaded
+            setTimeout(() => {
+                updatePageTitle();
+            }, 50);
+        }
     </script>
 </body>
 
