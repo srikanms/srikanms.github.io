@@ -88,6 +88,17 @@
             border-color: #cbd5e0;
         }
 
+        #autosave-toggle {
+            transition: all 0.3s ease;
+        }
+
+        #autosave-toggle:hover {
+            background: #f7fafc;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-color: #cbd5e0;
+        }
+
         #canvas-container {
             width: 100vw;
             height: 100vh;
@@ -691,6 +702,40 @@
             visibility: visible;
             transition: opacity 0.5s ease-out, visibility 0s linear 0s;
         }
+
+        /* File reload modal styles */
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .file-item:hover {
+            background: #e9ecef;
+            border-color: #4299e1;
+        }
+
+        .file-item .file-icon {
+            margin-right: 10px;
+            font-size: 16px;
+        }
+
+        .file-item .file-name {
+            flex: 1;
+            font-weight: 500;
+            color: #2d3748;
+        }
+
+        .file-item .file-action {
+            font-size: 12px;
+            color: #718096;
+        }
     </style>
 </head>
 
@@ -703,6 +748,8 @@
         <button onclick="saveMindMapAsMarkdown()">📝 Save Markdown</button>
         <button onclick="saveMindMapAsNewFile()">💾 Save As...</button> <!-- Added Save As button -->
         <button onclick="loadMindMapFromMarkdown()">📄 Load Markdown</button>
+        <button onclick="toggleAutosave()" id="autosave-toggle">🔄 Autosave: ON</button>
+        <button onclick="clearRecentFiles()" title="Clear recent files list" style="display: none;">🧹 Clear Recent</button>
     </div>
 
     <div id="canvas-container">
@@ -737,6 +784,7 @@
             <div>Arrow keys: Navigate</div>
             <div>Mouse wheel: Zoom</div>
             <div>Click & drag canvas: Pan</div>
+            <div><strong>Auto-reload:</strong> Shows recent files on refresh</div>
         </div>
     </div>
 
@@ -767,9 +815,27 @@
         </div>
     </div>
 
-    <!-- Published: 2025-06-24 03:10:53 UTC -->
+    <!-- File selection modal for auto-reload -->
+    <div id="file-reload-modal" class="note-modal hidden">
+        <div class="note-modal-header">
+            <h3>Select File to Reload</h3>
+            <button class="note-modal-close" onclick="closeFileReloadModal()">×</button>
+        </div>
+        <div class="note-modal-body">
+            <p><strong>Recent files found:</strong></p>
+            <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">Click a file below to open the file picker. You'll need to manually navigate to and select the file (browsers don't allow auto-selection for security).</p>
+            <div id="recent-files-list" style="margin-top: 15px;">
+                <!-- File list will be populated here -->
+            </div>
+        </div>
+        <div class="note-modal-footer">
+            <button class="note-cancel-btn" onclick="closeFileReloadModal()">Start Fresh</button>
+        </div>
+    </div>
+
+    <!-- Published: 2025-06-29 16:13:47 UTC -->
     <script>
-        const PUBLISHED_TIMESTAMP = '2025-06-24 03:10:53 UTC';
+        const PUBLISHED_TIMESTAMP = '2025-06-29 16:13:47 UTC';
         // --- State ---
         let nodes = [];
         let selectedNode = null;
@@ -793,6 +859,13 @@
             mindmapInner.style.transform = `translate(${pan.x}px,${pan.y}px) scale(${zoom})`;
         }
         applyTransform();
+
+        // Check for auto-reload on page load - DISABLED
+        // document.addEventListener('DOMContentLoaded', checkForAutoReload);
+        // Also check if DOM is already loaded
+        // if (document.readyState !== 'loading') {
+        //     checkForAutoReload();
+        // }
 
         canvasContainer.addEventListener('mousedown', e => {
             if (e.button !== 0) return;
@@ -1749,10 +1822,16 @@
         window.toggleInstructions = toggleInstructions;
         window.cancelDelete = cancelDelete;
         window.confirmDelete = confirmDelete;
+        window.toggleAutosave = toggleAutosave;
+        window.clearRecentFiles = clearRecentFiles;
+        window.closeFileReloadModal = closeFileReloadModal;
+        window.selectFileToReload = selectFileToReload;
 
         let currentFileHandle = null; // Added to store the file handle for File System Access API
         let hasUnsavedChanges = false; // Track unsaved changes
         let currentFileName = null; // Track current file name
+        let autosaveEnabled = true; // Enable autosave by default
+        let autosaveTimeout = null; // Debounce timer for autosave
 
         // File status functions
         function updatePageTitle() {
@@ -1816,6 +1895,14 @@
                 hasUnsavedChanges = true;
                 updateFileStatus();
             }
+            
+            // Trigger autosave with debouncing
+            if (autosaveEnabled && (currentFileHandle || currentFileName)) {
+                clearTimeout(autosaveTimeout);
+                autosaveTimeout = setTimeout(() => {
+                    performAutosave();
+                }, 2000); // Wait 2 seconds after last change before autosaving
+            }
         }
 
         function markAsSaved() {
@@ -1827,6 +1914,216 @@
             currentFileName = fileName;
             hasUnsavedChanges = false;
             updateFileStatus();
+            
+            // Add filename to localStorage for auto-reload
+            addFileToRecentList(fileName);
+        }
+
+        // Simple filename tracking for auto-reload
+        function addFileToRecentList(fileName) {
+            if (!fileName) return;
+            
+            try {
+                let recentFiles = JSON.parse(localStorage.getItem('mindmap_recent_files') || '[]');
+                
+                // Remove if already exists (to move to front)
+                recentFiles = recentFiles.filter(f => f !== fileName);
+                
+                // Add to front
+                recentFiles.unshift(fileName);
+                
+                // Keep only last 10 files
+                recentFiles = recentFiles.slice(0, 10);
+                
+                localStorage.setItem('mindmap_recent_files', JSON.stringify(recentFiles));
+            } catch (error) {
+                console.warn('Failed to save recent file to localStorage:', error);
+            }
+        }
+
+        function getRecentFiles() {
+            try {
+                return JSON.parse(localStorage.getItem('mindmap_recent_files') || '[]');
+            } catch (error) {
+                console.warn('Failed to load recent files from localStorage:', error);
+                return [];
+            }
+        }
+
+        function clearRecentFiles() {
+            try {
+                localStorage.removeItem('mindmap_recent_files');
+                showAutosaveNotification('Recent files cleared', false, true);
+            } catch (error) {
+                console.warn('Failed to clear recent files:', error);
+            }
+        }
+
+        // Autosave functionality
+        async function performAutosave() {
+            if (!hasUnsavedChanges) return;
+            
+            // Show autosave in progress
+            showAutosaveNotification('Autosaving...', false, false); // Don't auto-hide
+            
+            try {
+                if (currentFileHandle) {
+                    // Save using File System Access API
+                    const markdown = generateMarkdown();
+                    const writable = await currentFileHandle.createWritable();
+                    await writable.write(markdown);
+                    await writable.close();
+                    markAsSaved();
+                    showAutosaveNotification('Autosaved', false, true); // Auto-hide after delay
+                } else if (currentFileName) {
+                    // Fallback to download for browsers without File System Access API
+                    const markdown = generateMarkdown();
+                    const blob = new Blob([markdown], { type: 'text/markdown' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = currentFileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    markAsSaved();
+                    showAutosaveNotification('Autosaved (downloaded)', false, true);
+                }
+            } catch (error) {
+                console.error('Autosave failed:', error);
+                showAutosaveNotification('Autosave failed: ' + error.message, true, true);
+            }
+        }
+
+        function showAutosaveNotification(message, isError = false, autoHide = true) {
+            let notification = document.getElementById('autosave-notification');
+            if (!notification) {
+                notification = document.createElement('div');
+                notification.id = 'autosave-notification';
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    color: white;
+                    font-size: 14px;
+                    z-index: 10000;
+                    transition: opacity 0.3s ease;
+                    opacity: 0;
+                    pointer-events: none;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+                `;
+                document.body.appendChild(notification);
+            }
+            
+            notification.textContent = message;
+            notification.style.backgroundColor = isError ? '#e53e3e' : (message.includes('Autosaving') ? '#3182ce' : '#38a169');
+            notification.style.opacity = '1';
+            
+            // Clear any existing timeout
+            if (notification.timeoutId) {
+                clearTimeout(notification.timeoutId);
+            }
+            
+            if (autoHide) {
+                notification.timeoutId = setTimeout(() => {
+                    notification.style.opacity = '0';
+                }, message.includes('Autosaved') ? 1500 : 3000); // Shorter for success, longer for errors
+            }
+        }
+
+        function generateMarkdown() {
+            const roots = nodes.filter(n => !n.parent);
+            let markdown = '# Mind Map\n\n';
+            
+            roots.forEach(root => {
+                markdown += nodeToMarkdown(root, 0);
+            });
+            
+            return markdown;
+        }
+
+        function toggleAutosave() {
+            autosaveEnabled = !autosaveEnabled;
+            const button = document.getElementById('autosave-toggle');
+            if (button) {
+                button.textContent = `🔄 Autosave: ${autosaveEnabled ? 'ON' : 'OFF'}`;
+                button.style.opacity = autosaveEnabled ? '1' : '0.6';
+            }
+            
+            // Clear any pending autosave if disabled
+            if (!autosaveEnabled && autosaveTimeout) {
+                clearTimeout(autosaveTimeout);
+                autosaveTimeout = null;
+            }
+            
+            showAutosaveNotification(`Autosave ${autosaveEnabled ? 'enabled' : 'disabled'}`);
+        }
+
+        // File reload modal functions
+        function showFileReloadModal() {
+            const recentFiles = getRecentFiles();
+            if (recentFiles.length === 0) return false;
+
+            const modal = document.getElementById('file-reload-modal');
+            const filesList = document.getElementById('recent-files-list');
+            
+            // Clear existing list
+            filesList.innerHTML = '';
+            
+            // Add each recent file
+            recentFiles.forEach((fileName, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.onclick = () => selectFileToReload(fileName);
+                
+                fileItem.innerHTML = `
+                    <span class="file-icon">📄</span>
+                    <span class="file-name">${fileName}</span>
+                    <span class="file-action">Click to load</span>
+                `;
+                
+                filesList.appendChild(fileItem);
+            });
+            
+            modal.classList.remove('hidden');
+            document.getElementById('overlay').classList.remove('hidden');
+            return true;
+        }
+
+        function closeFileReloadModal() {
+            const modal = document.getElementById('file-reload-modal');
+            modal.classList.add('hidden');
+            document.getElementById('overlay').classList.add('hidden');
+        }
+
+        async function selectFileToReload(fileName) {
+            closeFileReloadModal();
+            
+            // Show notification about which file to select
+            showAutosaveNotification(`Please select: ${fileName}`, false, true);
+            
+            // Just call the regular load function - user will select the file
+            loadMindMapFromMarkdown();
+        }
+
+        // Auto-reload check on page load
+        function checkForAutoReload() {
+            // Only show auto-reload modal if:
+            // 1. There are no existing nodes (fresh start)
+            // 2. There are recent files available
+            // 3. No file is currently loaded
+            if (nodes.length === 0 && !currentFileName) {
+                const recentFiles = getRecentFiles();
+                if (recentFiles.length > 0) {
+                    // Small delay to ensure DOM is ready
+                    setTimeout(() => {
+                        showFileReloadModal();
+                    }, 500);
+                }
+            }
         }
 
 // --- Keyboard controls ---
@@ -2172,15 +2469,23 @@
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = 'mindmap.md';
+                    a.download = currentFileName || 'mindmap.md';
                     a.click();
                     URL.revokeObjectURL(url);
+                    
+                    // Set filename for status display
+                    if (!currentFileName) {
+                        setCurrentFile('mindmap.md');
+                    } else {
+                        markAsSaved();
+                    }
+                    showAutosaveNotification('Downloaded successfully');
                     return;
                 }
 
                 if (!currentFileHandle) {
                     currentFileHandle = await window.showSaveFilePicker({
-                        suggestedName: 'mindmap.md',
+                        suggestedName: currentFileName || 'mindmap.md',
                         types: [{
                             description: 'Markdown Files',
                             accept: { 'text/markdown': ['.md'] },
@@ -2197,14 +2502,14 @@
                     markAsSaved();
                 }
                 
-                showSaveNotification(currentFileHandle.name); // Show notification
+                showAutosaveNotification('Saved successfully'); // Use autosave notification
             } catch (err) {
                 if (err.name === 'AbortError') {
                     // User cancelled the file picker
                     console.log('Save operation cancelled by user.');
                 } else {
                     console.error('Error saving mind map:', err);
-                    alert('Error saving mind map: ' + err.message);
+                    showAutosaveNotification('Save failed: ' + err.message, true);
                     // Invalidate the handle on other errors so the user is prompted again
                     currentFileHandle = null;
                 }
@@ -2312,6 +2617,12 @@
         
         function parseMarkdownToMindMap(markdown) {
             console.log('Parsing markdown:', markdown.substring(0, 100) + '...');
+            
+            // Clear any pending autosave timer
+            if (autosaveTimeout) {
+                clearTimeout(autosaveTimeout);
+                autosaveTimeout = null;
+            }
             
             // Clear existing DOM elements before clearing the nodes array
             nodes.forEach(node => {
