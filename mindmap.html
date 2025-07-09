@@ -477,6 +477,20 @@
             background: transparent;
         }
 
+        .context-menu-separator {
+            height: 1px;
+            background: #e2e8f0;
+            margin: 4px 0;
+        }
+
+        .context-menu-item.delete {
+            color: #e53e3e;
+        }
+
+        .context-menu-item.delete:hover {
+            background: #fed7d7;
+        }
+
         .note-modal {
             position: fixed;
             top: 50%;
@@ -981,9 +995,9 @@
         </div>
     </div>
 
-    <!-- Published: 2025-07-09 22:18:53 UTC -->
+    <!-- Published: 2025-07-09 22:36:18 UTC -->
     <script>
-        const PUBLISHED_TIMESTAMP = '2025-07-09 22:18:53 UTC';
+        const PUBLISHED_TIMESTAMP = '2025-07-09 22:36:18 UTC';
         // --- State ---
         let nodes = [];
         let selectedNode = null;
@@ -1682,6 +1696,14 @@
                 selectNode(node);
             };
 
+            // Add double-click to edit functionality
+            nodeEl.ondblclick = e => {
+                e.stopPropagation();
+                e.preventDefault();
+                selectNode(node);
+                startEditing(node);
+            };
+
             // Add right-click context menu
             nodeEl.oncontextmenu = e => {
                 e.preventDefault();
@@ -2332,6 +2354,17 @@
             contextMenu = document.createElement('div');
             contextMenu.className = 'context-menu';
 
+            // Add rename option
+            const renameItem = document.createElement('div');
+            renameItem.className = 'context-menu-item';
+            renameItem.innerHTML = '✏️ Rename';
+            renameItem.onclick = () => {
+                hideContextMenu();
+                selectNode(node);
+                startEditing(node);
+            };
+            contextMenu.appendChild(renameItem);
+
             // Add note option (only show if node doesn't have a note)
             if (!node.note || !node.note.trim()) {
                 const addNoteItem = document.createElement('div');
@@ -2352,6 +2385,21 @@
                 };
                 contextMenu.appendChild(editNoteItem);
             }
+
+            // Add separator
+            const separator = document.createElement('div');
+            separator.className = 'context-menu-separator';
+            contextMenu.appendChild(separator);
+
+            // Add delete option
+            const deleteItem = document.createElement('div');
+            deleteItem.className = 'context-menu-item delete';
+            deleteItem.innerHTML = '🗑️ Delete';
+            deleteItem.onclick = () => {
+                hideContextMenu();
+                deleteNode(node);
+            };
+            contextMenu.appendChild(deleteItem);
 
             // Position context menu
             document.body.appendChild(contextMenu);
