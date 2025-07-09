@@ -782,6 +782,12 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
         }
 
+        .status-option.focused {
+            transform: scale(1.1);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            border: 2px solid #4299e1;
+        }
+
         .status-option.clear {
             background: #f7fafc;
             color: #718096;
@@ -914,6 +920,7 @@
             <div>Enter: Edit selected node</div>
             <div>Space: Toggle checkbox completion</div>
             <div>N: Add/edit note for selected node</div>
+            <div>S: Set status (use arrows to navigate, Enter to select)</div>
             <div>Delete: Delete node</div>
             <div>Ctrl+→: Add child or Expand</div>
             <div>Ctrl+↓: Add sibling below</div>
@@ -971,9 +978,9 @@
         </div>
     </div>
 
-    <!-- Published: 2025-07-09 18:18:54 UTC -->
+    <!-- Published: 2025-07-09 18:41:46 UTC -->
     <script>
-        const PUBLISHED_TIMESTAMP = '2025-07-09 18:18:54 UTC';
+        const PUBLISHED_TIMESTAMP = '2025-07-09 18:41:46 UTC';
         // --- State ---
         let nodes = [];
         let selectedNode = null;
@@ -1217,6 +1224,192 @@
             document.querySelectorAll('.status-picker').forEach(picker => {
                 picker.remove();
             });
+            // Remove keyboard event listener
+            document.removeEventListener('keydown', handleStatusPickerKeyboard);
+        }
+
+        // Keyboard-navigable status picker
+        let currentKeyboardStatusNode = null;
+        let statusPickerOptions = [];
+        let focusedOptionIndex = 0;
+
+        function showKeyboardStatusPicker(node) {
+            // Hide any existing status picker
+            hideStatusPicker();
+            
+            currentKeyboardStatusNode = node;
+            
+            // Create and show new status picker
+            const picker = createKeyboardStatusPicker(node);
+            document.body.appendChild(picker);
+            
+            // Position the picker near the selected node
+            if (node.element) {
+                const rect = node.element.getBoundingClientRect();
+                const pickerWidth = 200;
+                const pickerHeight = 120;
+                
+                // Position to the right of the node
+                let left = rect.right + 10;
+                let top = rect.top - 20;
+                
+                // If picker would go off screen to the right, position to the left
+                if (left + pickerWidth > window.innerWidth) {
+                    left = rect.left - pickerWidth - 10;
+                }
+                
+                // If picker would go off screen at the top, position below
+                if (top < 0) {
+                    top = rect.bottom + 10;
+                }
+                
+                // If picker would go off screen at the bottom, position above
+                if (top + pickerHeight > window.innerHeight) {
+                    top = rect.top - pickerHeight - 10;
+                }
+                
+                picker.style.left = left + 'px';
+                picker.style.top = top + 'px';
+            } else {
+                // Center on screen if node element not available
+                picker.style.left = '50%';
+                picker.style.top = '50%';
+                picker.style.transform = 'translate(-50%, -50%)';
+            }
+            
+            picker.style.display = 'flex';
+            
+            // Focus first option
+            focusedOptionIndex = 0;
+            updateStatusPickerFocus();
+            
+            // Add keyboard event listener
+            document.addEventListener('keydown', handleStatusPickerKeyboard);
+        }
+
+        function createKeyboardStatusPicker(node) {
+            const picker = document.createElement('div');
+            picker.className = 'status-picker';
+            picker.id = 'keyboard-status-picker';
+            
+            statusPickerOptions = [];
+            
+            // Add clear option if node has status
+            if (node.status) {
+                const clearOption = document.createElement('div');
+                clearOption.className = 'status-option clear';
+                clearOption.innerHTML = '×';
+                clearOption.title = 'Clear status';
+                clearOption.dataset.action = 'clear';
+                picker.appendChild(clearOption);
+                statusPickerOptions.push(clearOption);
+            }
+            
+            // Add status options
+            Object.entries(statusConfig).forEach(([key, config]) => {
+                const option = document.createElement('div');
+                option.className = `status-option status-${key}`;
+                option.innerHTML = config.icon;
+                option.title = config.name;
+                option.dataset.statusKey = key;
+                picker.appendChild(option);
+                statusPickerOptions.push(option);
+            });
+            
+            return picker;
+        }
+
+        function updateStatusPickerFocus() {
+            // Remove focus from all options
+            statusPickerOptions.forEach(option => {
+                option.classList.remove('focused');
+            });
+            
+            // Add focus to current option
+            if (statusPickerOptions[focusedOptionIndex]) {
+                statusPickerOptions[focusedOptionIndex].classList.add('focused');
+            }
+        }
+
+        function handleStatusPickerKeyboard(e) {
+            // Only handle if keyboard status picker is open
+            if (!document.getElementById('keyboard-status-picker')) {
+                return;
+            }
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            switch (e.key) {
+                case 'Escape':
+                    hideStatusPicker();
+                    break;
+                    
+                case 'Enter':
+                    // Select current focused option
+                    const selectedOption = statusPickerOptions[focusedOptionIndex];
+                    if (selectedOption) {
+                        if (selectedOption.dataset.action === 'clear') {
+                            clearNodeStatus(currentKeyboardStatusNode);
+                        } else if (selectedOption.dataset.statusKey) {
+                            setNodeStatus(currentKeyboardStatusNode, selectedOption.dataset.statusKey);
+                        }
+                    }
+                    hideStatusPicker();
+                    break;
+                    
+                case 'ArrowRight':
+                    // Move right within the same row
+                    focusedOptionIndex = (focusedOptionIndex + 1) % statusPickerOptions.length;
+                    updateStatusPickerFocus();
+                    break;
+                    
+                case 'ArrowLeft':
+                    // Move left within the same row
+                    focusedOptionIndex = (focusedOptionIndex - 1 + statusPickerOptions.length) % statusPickerOptions.length;
+                    updateStatusPickerFocus();
+                    break;
+                    
+                case 'ArrowDown':
+                    // Move down to next row (2D grid navigation)
+                    const itemsPerRow = calculateItemsPerRow();
+                    const newDownIndex = focusedOptionIndex + itemsPerRow;
+                    if (newDownIndex < statusPickerOptions.length) {
+                        focusedOptionIndex = newDownIndex;
+                    } else {
+                        // Wrap to first row, same column
+                        const currentColumn = focusedOptionIndex % itemsPerRow;
+                        focusedOptionIndex = currentColumn;
+                    }
+                    updateStatusPickerFocus();
+                    break;
+                    
+                case 'ArrowUp':
+                    // Move up to previous row (2D grid navigation)
+                    const itemsPerRowUp = calculateItemsPerRow();
+                    const newUpIndex = focusedOptionIndex - itemsPerRowUp;
+                    if (newUpIndex >= 0) {
+                        focusedOptionIndex = newUpIndex;
+                    } else {
+                        // Wrap to last row, same column
+                        const currentColumn = focusedOptionIndex % itemsPerRowUp;
+                        const totalRows = Math.ceil(statusPickerOptions.length / itemsPerRowUp);
+                        const lastRowStartIndex = (totalRows - 1) * itemsPerRowUp;
+                        const targetIndex = lastRowStartIndex + currentColumn;
+                        // Make sure we don't go beyond the total number of options
+                        focusedOptionIndex = Math.min(targetIndex, statusPickerOptions.length - 1);
+                    }
+                    updateStatusPickerFocus();
+                    break;
+            }
+        }
+
+        function calculateItemsPerRow() {
+            // Based on status picker width (200px) and item width (28px + gap)
+            // Each item is 28px wide + 4px gap = 32px total
+            // With 8px padding on each side: available width = 200 - 16 = 184px
+            // Items per row = floor(184 / 32) = 5 items per row
+            return 5;
         }
 
         // Hide status picker when clicking elsewhere
@@ -2553,6 +2746,11 @@
 
 // --- Keyboard controls ---
         document.addEventListener('keydown', e => {
+            // Handle keyboard status picker (has its own event handler)
+            if (document.getElementById('keyboard-status-picker')) {
+                return; // Status picker keyboard handler will take care of this
+            }
+
             // Handle escape key for note modal
             if (!document.getElementById('note-modal').classList.contains('hidden')) {
                 if (e.key === 'Escape') {
@@ -2608,6 +2806,15 @@
             if (e.key === 'n' || e.key === 'N') {
                 if (selectedNode) {
                     openNoteModal(selectedNode);
+                    e.preventDefault();
+                }
+                return;
+            }
+
+            // Status key (S)
+            if (e.key === 's' || e.key === 'S') {
+                if (selectedNode) {
+                    showKeyboardStatusPicker(selectedNode);
                     e.preventDefault();
                 }
                 return;
