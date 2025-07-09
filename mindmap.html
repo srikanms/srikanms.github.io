@@ -951,6 +951,9 @@
         </div>
         <div class="note-modal-body">
             <textarea id="note-textarea" class="note-textarea" placeholder="Add your note here..."></textarea>
+            <div style="font-size: 0.8em; color: #666; margin-top: 8px; text-align: center;">
+                <strong>Alt+T</strong>: Insert timestamp • <strong>Ctrl+Enter</strong>: Save • <strong>Esc</strong>: Cancel
+            </div>
         </div>
         <div class="note-modal-footer">
             <button class="note-delete-btn" onclick="deleteNote()" id="note-delete-btn" style="display: none;">Delete
@@ -978,9 +981,9 @@
         </div>
     </div>
 
-    <!-- Published: 2025-07-09 18:41:46 UTC -->
+    <!-- Published: 2025-07-09 22:18:53 UTC -->
     <script>
-        const PUBLISHED_TIMESTAMP = '2025-07-09 18:41:46 UTC';
+        const PUBLISHED_TIMESTAMP = '2025-07-09 22:18:53 UTC';
         // --- State ---
         let nodes = [];
         let selectedNode = null;
@@ -1014,9 +1017,37 @@
         };
 
         // --- Status Management ---
+        function generateTimestamp() {
+            const now = new Date();
+            return now.getFullYear() + '-' +
+                String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                String(now.getDate()).padStart(2, '0') + ' ' +
+                String(now.getHours()).padStart(2, '0') + ':' +
+                String(now.getMinutes()).padStart(2, '0') + ':' +
+                String(now.getSeconds()).padStart(2, '0') + ': ';
+        }
+
+        function addStatusChangeNote(node, fromStatus, toStatus) {
+            const timestamp = generateTimestamp();
+            const fromName = fromStatus ? statusConfig[fromStatus]?.name || fromStatus : 'None';
+            const toName = toStatus ? statusConfig[toStatus]?.name || toStatus : 'None';
+            const statusChangeNote = `Status changed from "${fromName}" to "${toName}"`;
+            
+            // Add to existing note or create new note
+            if (node.note && node.note.trim()) {
+                node.note += '\n' + timestamp + statusChangeNote;
+            } else {
+                node.note = timestamp + statusChangeNote;
+            }
+        }
+
         function setNodeStatus(node, statusKey) {
+            const oldStatus = node.status;
             node.status = statusKey;
             node.statusIcon = statusKey ? statusConfig[statusKey].icon : '';
+            
+            // Add automatic status change note
+            addStatusChangeNote(node, oldStatus, statusKey);
             
             // Auto-sync with checkbox: if assigning non-completed status to completed item, uncheck it
             if (node.completed && statusKey !== 'completed') {
@@ -1052,8 +1083,12 @@
         }
 
         function clearNodeStatus(node) {
+            const oldStatus = node.status;
             node.status = '';
             node.statusIcon = '';
+            
+            // Add automatic status change note
+            addStatusChangeNote(node, oldStatus, '');
             
             // If clearing completed status, also uncheck the checkbox
             if (node.completed) {
@@ -2380,13 +2415,29 @@
                 } else if (e.ctrlKey && e.key === 'Enter') {
                     saveNote();
                     e.preventDefault();
+                } else if (e.altKey && e.key === 't') {
+                    // Insert current date/time at cursor position
+                    e.preventDefault();
+                    const timestamp = generateTimestamp();
+                    
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    const text = textarea.value;
+                    
+                    textarea.value = text.substring(0, start) + timestamp + text.substring(end);
+                    
+                    // Place cursor after the inserted timestamp
+                    const newPosition = start + timestamp.length;
+                    textarea.setSelectionRange(newPosition, newPosition);
                 }
                 e.stopPropagation();
             };
 
             setTimeout(() => {
                 textarea.focus();
-                textarea.select();
+                // Place cursor at the end instead of selecting all text
+                const length = textarea.value.length;
+                textarea.setSelectionRange(length, length);
             }, 100);
         } function closeNoteModal() {
             const modal = document.getElementById('note-modal');
