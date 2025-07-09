@@ -167,6 +167,18 @@
             box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.3);
         }
 
+        /* When node is selected and has status, preserve status color but add selection border */
+        .node.selected.status-idea { background-color: #FFF7AE; }
+        .node.selected.status-planned { background-color: #FCECC2; }
+        .node.selected.status-not-started { background-color: #ECECEC; }
+        .node.selected.status-in-progress { background-color: #B8E4F8; }
+        .node.selected.status-waiting { background-color: #FFE1C6; }
+        .node.selected.status-blocked { background-color: #FFCACA; }
+        .node.selected.status-at-risk { background-color: #FFD6C8; }
+        .node.selected.status-in-review { background-color: #DAD5F2; }
+        .node.selected.status-completed { background-color: #CFF5D1; }
+        .node.selected.status-archived { background-color: #D7D7D7; }
+
         .node.editing {
             background: #ffffff;
             border-color: #4299e1;
@@ -408,7 +420,7 @@
             left: -12px;
             width: 22px;
             height: 22px;
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 1);
             border: 1px solid #e2e8f0;
             border-radius: 50%;
             cursor: pointer;
@@ -736,6 +748,132 @@
             font-size: 12px;
             color: #718096;
         }
+
+        /* Status picker styles */
+        .status-picker {
+            position: fixed;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 200;
+            display: none;
+            flex-wrap: wrap;
+            width: 200px;
+            padding: 8px;
+            gap: 4px;
+        }
+
+        .status-option {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .status-option:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .status-option.clear {
+            background: #f7fafc;
+            color: #718096;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        /* Status placeholder button - shows when no status is assigned */
+        .status-placeholder {
+            position: absolute;
+            top: -12px;
+            left: -12px;
+            width: 22px;
+            height: 22px;
+            background: rgba(255, 255, 255, 1);
+            border: 1px solid #e2e8f0;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #cbd5e0;
+            z-index: 25;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .status-placeholder:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 1);
+            border-color: #4299e1;
+            color: #4299e1;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+        }
+
+        /* When both note and status icons are present, position them side by side */
+        .node .note-indicator + .status-placeholder,
+        .node .note-indicator + .status-icon {
+            left: 12px;
+        }
+
+        /* Show status placeholder on node hover only when no status is assigned */
+        .node:hover .status-placeholder {
+            display: flex !important;
+        }
+
+        /* Status colors */
+        .status-idea { background-color: #FFF7AE; }
+        .status-planned { background-color: #FCECC2; }
+        .status-not-started { background-color: #ECECEC; }
+        .status-in-progress { background-color: #B8E4F8; }
+        .status-waiting { background-color: #FFE1C6; }
+        .status-blocked { background-color: #FFCACA; }
+        .status-at-risk { background-color: #FFD6C8; }
+        .status-in-review { background-color: #DAD5F2; }
+        .status-completed { background-color: #CFF5D1; }
+        .status-archived { background-color: #D7D7D7; }
+
+        /* Status icon indicator */
+        .status-icon {
+            position: absolute;
+            top: -12px;
+            left: -12px;
+            width: 22px;
+            height: 22px;
+            background: rgba(255, 255, 255, 1);
+            border: 1px solid #e2e8f0;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #718096;
+            z-index: 25;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .status-icon:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 1);
+            border-color: #cbd5e0;
+            color: #4a5568;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+        }
+
+        /* When both note and status icons are present, position them side by side */
+        .node .note-indicator + .status-icon {
+            left: 12px; /* Position status icon next to note icon */
+        }
     </style>
 </head>
 
@@ -833,9 +971,9 @@
         </div>
     </div>
 
-    <!-- Published: 2025-07-02 18:19:25 UTC -->
+    <!-- Published: 2025-07-09 18:18:54 UTC -->
     <script>
-        const PUBLISHED_TIMESTAMP = '2025-07-02 18:19:25 UTC';
+        const PUBLISHED_TIMESTAMP = '2025-07-09 18:18:54 UTC';
         // --- State ---
         let nodes = [];
         let selectedNode = null;
@@ -853,6 +991,236 @@
         const canvasContainer = document.getElementById('canvas-container');
         const mindmapInner = document.getElementById('mindmap-inner');
         const canvas = document.getElementById('canvas');
+
+        // Status configuration
+        const statusConfig = {
+            'idea': { icon: '💡', color: '#FFF7AE', name: 'Idea / Someday' },
+            'planned': { icon: '📋', color: '#FCECC2', name: 'Planned / Ready' },
+            'not-started': { icon: '⏸', color: '#ECECEC', name: 'Not Started' },
+            'in-progress': { icon: '⚙️', color: '#B8E4F8', name: 'In Progress' },
+            'waiting': { icon: '⏳', color: '#FFE1C6', name: 'Waiting / On-Hold' },
+            'blocked': { icon: '⛔', color: '#FFCACA', name: 'Blocked' },
+            'at-risk': { icon: '⚠️', color: '#FFD6C8', name: 'At Risk' },
+            'in-review': { icon: '🔍', color: '#DAD5F2', name: 'In Review / QA' },
+            'completed': { icon: '✅', color: '#CFF5D1', name: 'Completed' },
+            'archived': { icon: '🗂', color: '#D7D7D7', name: 'Archived / Dropped' }
+        };
+
+        // --- Status Management ---
+        function setNodeStatus(node, statusKey) {
+            node.status = statusKey;
+            node.statusIcon = statusKey ? statusConfig[statusKey].icon : '';
+            
+            // Auto-sync with checkbox: if assigning non-completed status to completed item, uncheck it
+            if (node.completed && statusKey !== 'completed') {
+                node.completed = false;
+                // Update checkbox visual state if element exists
+                if (node.element) {
+                    const checkbox = node.element.querySelector('.node-checkbox');
+                    if (checkbox) {
+                        checkbox.classList.remove('checked');
+                    }
+                    node.element.classList.remove('completed');
+                }
+            }
+            // Auto-sync with checkbox: if assigning completed status, check the box
+            else if (!node.completed && statusKey === 'completed') {
+                node.completed = true;
+                // Update checkbox visual state if element exists
+                if (node.element) {
+                    const checkbox = node.element.querySelector('.node-checkbox');
+                    if (checkbox) {
+                        checkbox.classList.add('checked');
+                    }
+                    node.element.classList.add('completed');
+                }
+            }
+            
+            markAsChanged();
+            
+            // Update the node element if it exists
+            if (node.element) {
+                updateNodeStatusElements(node);
+            }
+        }
+
+        function clearNodeStatus(node) {
+            node.status = '';
+            node.statusIcon = '';
+            
+            // If clearing completed status, also uncheck the checkbox
+            if (node.completed) {
+                node.completed = false;
+                // Update checkbox visual state if element exists
+                if (node.element) {
+                    const checkbox = node.element.querySelector('.node-checkbox');
+                    if (checkbox) {
+                        checkbox.classList.remove('checked');
+                    }
+                    node.element.classList.remove('completed');
+                }
+            }
+            
+            markAsChanged();
+            
+            // Update the node element if it exists
+            if (node.element) {
+                updateNodeStatusElements(node);
+            }
+        }
+
+        function updateNodeStatusElements(node) {
+            // Remove any existing status classes
+            Object.keys(statusConfig).forEach(status => {
+                node.element.classList.remove(`status-${status}`);
+            });
+            
+            // Apply new status
+            if (node.status && statusConfig[node.status]) {
+                node.element.classList.add(`status-${node.status}`);
+            }
+            
+            // Remove existing status elements
+            const existingStatusIcon = node.element.querySelector('.status-icon');
+            const existingStatusPlaceholder = node.element.querySelector('.status-placeholder');
+            if (existingStatusIcon) existingStatusIcon.remove();
+            if (existingStatusPlaceholder) existingStatusPlaceholder.remove();
+            
+            // Also remove any existing note indicator to re-add it in the correct position
+            const existingNoteIndicator = node.element.querySelector('.note-indicator');
+            if (existingNoteIndicator) existingNoteIndicator.remove();
+            
+            // Add note indicator first (if note exists)
+            if (node.note && node.note.trim()) {
+                const noteIndicator = document.createElement('div');
+                noteIndicator.className = 'note-indicator has-note';
+                noteIndicator.innerHTML = '📝';
+                // Show note text in tooltip, truncate if too long
+                const notePreview = node.note.length > 100 ? node.note.substring(0, 100) + '...' : node.note;
+                noteIndicator.title = `Note: ${notePreview}\n\nClick to edit`;
+                noteIndicator.onclick = e => {
+                    e.stopPropagation();
+                    openNoteModal(node);
+                };
+                node.element.appendChild(noteIndicator);
+            }
+            
+            // Add appropriate status element after note indicator
+            if (node.status && statusConfig[node.status]) {
+                // Add status icon
+                const statusIcon = createStatusIcon(node);
+                node.element.appendChild(statusIcon);
+            } else {
+                // Add status placeholder
+                const statusPlaceholder = createStatusPlaceholder(node);
+                node.element.appendChild(statusPlaceholder);
+            }
+        }
+
+        function createStatusIcon(node) {
+            const statusIcon = document.createElement('div');
+            statusIcon.className = 'status-icon';
+            statusIcon.innerHTML = statusConfig[node.status].icon;
+            statusIcon.title = statusConfig[node.status].name + ' (click to change)';
+            statusIcon.onclick = e => {
+                e.stopPropagation();
+                showStatusPicker(e, node);
+            };
+            return statusIcon;
+        }
+
+        function createStatusPlaceholder(node) {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'status-placeholder';
+            placeholder.innerHTML = '+';
+            placeholder.title = 'Set status';
+            placeholder.onclick = e => {
+                e.stopPropagation();
+                showStatusPicker(e, node);
+            };
+            return placeholder;
+        }
+
+        function showStatusPicker(event, node) {
+            // Hide any existing status picker
+            hideStatusPicker();
+            
+            // Create and show new status picker
+            const picker = createStatusPicker(node);
+            document.body.appendChild(picker);
+            
+            // Position the picker near the click location but avoid overlapping with controls
+            const rect = event.target.getBoundingClientRect();
+            const pickerWidth = 200;
+            const pickerHeight = 120; // Approximate height
+            
+            // Try to position to the right of the node first
+            let left = rect.right + 10;
+            let top = rect.top - 20;
+            
+            // If picker would go off screen to the right, position to the left
+            if (left + pickerWidth > window.innerWidth) {
+                left = rect.left - pickerWidth - 10;
+            }
+            
+            // If picker would go off screen at the top, position below
+            if (top < 0) {
+                top = rect.bottom + 10;
+            }
+            
+            // If picker would go off screen at the bottom, position above
+            if (top + pickerHeight > window.innerHeight) {
+                top = rect.top - pickerHeight - 10;
+            }
+            
+            picker.style.left = left + 'px';
+            picker.style.top = top + 'px';
+            picker.style.display = 'flex';
+        }
+
+        function createStatusPicker(node) {
+            const picker = document.createElement('div');
+            picker.className = 'status-picker';
+            
+            // Add clear option if node has status
+            if (node.status) {
+                const clearOption = document.createElement('div');
+                clearOption.className = 'status-option clear';
+                clearOption.innerHTML = '×';
+                clearOption.title = 'Clear status';
+                clearOption.onclick = e => {
+                    e.stopPropagation();
+                    clearNodeStatus(node);
+                    hideStatusPicker();
+                };
+                picker.appendChild(clearOption);
+            }
+            
+            // Add status options
+            Object.entries(statusConfig).forEach(([key, config]) => {
+                const option = document.createElement('div');
+                option.className = `status-option status-${key}`;
+                option.innerHTML = config.icon;
+                option.title = config.name;
+                option.onclick = e => {
+                    e.stopPropagation();
+                    setNodeStatus(node, key);
+                    hideStatusPicker();
+                };
+                picker.appendChild(option);
+            });
+            
+            return picker;
+        }
+
+        function hideStatusPicker() {
+            document.querySelectorAll('.status-picker').forEach(picker => {
+                picker.remove();
+            });
+        }
+
+        // Hide status picker when clicking elsewhere
+        document.addEventListener('click', hideStatusPicker);
 
         // --- Pan/Zoom ---
         function applyTransform() {
@@ -932,7 +1300,9 @@
                 element: null,
                 expandBtn: null,
                 note: '', // Add note property
-                completed: false // Add completed property for checkbox functionality
+                completed: false, // Add completed property for checkbox functionality
+                status: '', // Add status property for status tracking
+                statusIcon: '' // Add status icon property
             };
             if (parent) parent.children.push(node);
             nodes.push(node);
@@ -1040,6 +1410,12 @@
             const nodeEl = document.createElement('div');
             nodeEl.className = 'node';
             if (node.completed) nodeEl.classList.add('completed');
+            
+            // Apply status styling if set
+            if (node.status && statusConfig[node.status]) {
+                nodeEl.classList.add(`status-${node.status}`);
+            }
+            
             nodeEl.style.left = node.x + 'px';
             nodeEl.style.top = node.y + 'px';
 
@@ -1071,7 +1447,9 @@
             }
 
             if (selectedNode === node) nodeEl.classList.add('selected');
-            if (editingNode === node) nodeEl.classList.add('editing');nodeEl.onclick = e => {
+            if (editingNode === node) nodeEl.classList.add('editing');
+
+            nodeEl.onclick = e => {
                 e.stopPropagation();
                 selectNode(node);
             };
@@ -1082,6 +1460,7 @@
                 e.stopPropagation();
                 showContextMenu(e, node);
             };
+            
             // Expand/collapse button
             if (node.children.length > 0) {
                 const btn = document.createElement('button');
@@ -1093,7 +1472,9 @@
                 };
                 nodeEl.appendChild(btn);
                 node.expandBtn = btn;
-            }            // Note indicator - only show when note exists
+            }
+
+            // Note indicator - only show when note exists
             if (node.note && node.note.trim()) {
                 const noteIndicator = document.createElement('div');
                 noteIndicator.className = 'note-indicator has-note';
@@ -1108,11 +1489,24 @@
                 nodeEl.appendChild(noteIndicator);
             }
 
+            // Status icon or placeholder
+            if (node.status && statusConfig[node.status]) {
+                // Add status icon
+                const statusIcon = createStatusIcon(node);
+                nodeEl.appendChild(statusIcon);
+            } else {
+                // Add status placeholder
+                const statusPlaceholder = createStatusPlaceholder(node);
+                nodeEl.appendChild(statusPlaceholder);
+            }
+
             // Add hover controls for node creation
             addHoverControls(nodeEl, node);
 
             node.element = nodeEl;
-            mindmapInner.appendChild(nodeEl); if (!node.collapsed) {
+            mindmapInner.appendChild(nodeEl);
+
+            if (!node.collapsed) {
                 node.children.forEach(child => renderSubtree(child));
             }
         } 
@@ -1365,6 +1759,17 @@
             node.completed = !node.completed;
             markAsChanged(); // Mark as changed when completion status changes
             
+            // Auto-assign status based on checkbox state
+            if (node.completed) {
+                // When checking the box, automatically set status to "completed"
+                setNodeStatus(node, 'completed');
+            } else {
+                // When unchecking, clear the completed status but keep other statuses
+                if (node.status === 'completed') {
+                    clearNodeStatus(node);
+                }
+            }
+            
             // Update the visual state without full re-render
             if (node.element) {
                 const checkbox = node.element.querySelector('.node-checkbox');
@@ -1453,11 +1858,18 @@
                 const contentWrapper = document.createElement('span');
                 contentWrapper.className = 'node-content';
                 contentWrapper.textContent = node.text;
-                node.element.appendChild(contentWrapper);                // Update completed state
+                node.element.appendChild(contentWrapper);
+
+                // Update completed state
                 if (node.completed) {
                     node.element.classList.add('completed');
                 } else {
                     node.element.classList.remove('completed');
+                }
+
+                // Re-apply status styling
+                if (node.status && statusConfig[node.status]) {
+                    node.element.classList.add(`status-${node.status}`);
                 }
 
                 // Adjust width based on text length (account for checkbox width)
@@ -1479,7 +1891,9 @@
                     };
                     node.element.appendChild(btn);
                     node.expandBtn = btn;
-                }// Re-add note indicator - only show when note exists
+                }
+
+                // Re-add note indicator - only show when note exists
                 if (node.note && node.note.trim()) {
                     const noteIndicator = document.createElement('div');
                     noteIndicator.className = 'note-indicator has-note';
@@ -1492,6 +1906,17 @@
                         openNoteModal(node);
                     };
                     node.element.appendChild(noteIndicator);
+                }
+
+                // Re-add status icon or placeholder
+                if (node.status && statusConfig[node.status]) {
+                    // Add status icon
+                    const statusIcon = createStatusIcon(node);
+                    node.element.appendChild(statusIcon);
+                } else {
+                    // Add status placeholder
+                    const statusPlaceholder = createStatusPlaceholder(node);
+                    node.element.appendChild(statusPlaceholder);
                 }
 
                 // Re-add hover controls
@@ -2539,14 +2964,26 @@
             let markdown = '';
             const indent = '  '.repeat(level);
             const checkbox = node.completed ? '[x]' : '[ ]';
-            markdown += indent + '- ' + checkbox + ' ' + node.text + '\n'; // Corrected
+            
+            // Include status icon in the text if status is set
+            let nodeText = node.text;
+            if (node.status && statusConfig[node.status]) {
+                nodeText = statusConfig[node.status].icon + ' ' + nodeText;
+            }
+            
+            markdown += indent + '- ' + checkbox + ' ' + nodeText + '\n';
 
             // Add note if it exists
             if (node.note && node.note.trim()) {
-                const noteLines = node.note.trim().split('\n'); // Corrected
+                const noteLines = node.note.trim().split('\n');
                 noteLines.forEach(line => {
-                    markdown += indent + '  > ' + line + '\n'; // Corrected
+                    markdown += indent + '  > ' + line + '\n';
                 });
+            }
+
+            // Add status metadata if status is set (as a comment for preservation)
+            if (node.status) {
+                markdown += indent + '  <!-- status:' + node.status + ' -->\n';
             }
 
             // Always include children regardless of collapsed state
@@ -2647,7 +3084,42 @@
             let currentNode = null;
             lines.forEach(line => {
                 // Skip empty lines and metadata
-                if (!line.trim() || line.startsWith('<!--') || line.startsWith('#')) return;
+                if (!line.trim() || line.startsWith('#')) return;
+                
+                // Check for status metadata comments
+                const statusMatch = line.match(/^(\s*)<!--\s*status:(\w+)\s*-->$/);
+                if (statusMatch) {
+                    const indent = statusMatch[1].length / 2;
+                    const statusKey = statusMatch[2];
+                    
+                    // Find the node this status belongs to based on indentation
+                    let targetNode = null;
+                    if (indent === 0) {
+                        // Status at root level - find the last root node
+                        for (let i = nodes.length - 1; i >= 0; i--) {
+                            if (!nodes[i].parent) {
+                                targetNode = nodes[i];
+                                break;
+                            }
+                        }
+                    } else {
+                        // Status is indented - find the node at the parent level
+                        const parentLevel = indent - 1;
+                        for (let i = nodeStack.length - 1; i >= 0; i--) {
+                            if (nodeStack[i].level === parentLevel) {
+                                targetNode = nodeStack[i].node;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (targetNode && statusConfig[statusKey]) {
+                        targetNode.status = statusKey;
+                        targetNode.statusIcon = statusConfig[statusKey].icon;
+                        console.log('Applied status to:', targetNode.text, 'status:', statusKey);
+                    }
+                    return;
+                }
 
                 console.log('Processing line:', line);
                 // Check if this is a note line (indented >)
@@ -2688,12 +3160,23 @@
                         console.warn('Could not find target node for note:', noteText, 'at indent:', noteIndent);
                     }
                     return;
-                }                // Count indentation (2 spaces per level)
+                }
+
+                // Count indentation (2 spaces per level)
                 const indentMatch = line.match(/^(\s*)-\s*(\[[x\s]\])?\s*(.+)$/);
                 if (indentMatch) {
                     const indent = indentMatch[1].length / 2;
                     const checkboxMatch = indentMatch[2];
-                    const text = indentMatch[3].trim();
+                    let text = indentMatch[3].trim();
+                    
+                    // Extract status icon from text if present
+                    let detectedStatus = '';
+                    Object.entries(statusConfig).forEach(([key, config]) => {
+                        if (text.startsWith(config.icon + ' ')) {
+                            detectedStatus = key;
+                            text = text.substring(config.icon.length + 1); // Remove icon and space
+                        }
+                    });
                     
                     // Determine completion status from checkbox
                     const completed = checkboxMatch && checkboxMatch.includes('x');
@@ -2713,6 +3196,13 @@
                     // Create node
                     const node = createNode(text, 0, 0, parent);
                     node.completed = completed; // Set completion status
+                    
+                    // Set status if detected from icon
+                    if (detectedStatus) {
+                        node.status = detectedStatus;
+                        node.statusIcon = statusConfig[detectedStatus].icon;
+                    }
+                    
                     currentNode = node;
                     
                     // Update stack - remove all nodes at same or deeper level first
