@@ -310,6 +310,17 @@
             text-align: center;
         }
 
+        /* Note delete confirmation should appear above note modal */
+        .delete-note-confirm {
+            z-index: 2002;
+        }
+
+        /* Disable note modal interaction when confirmation dialog is open */
+        .note-modal.disabled {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
         .delete-confirm h3 {
             margin: 0 0 10px 0;
             color: #2d3748;
@@ -772,10 +783,27 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             z-index: 200;
             display: none;
-            flex-wrap: wrap;
+            flex-direction: column;
             width: 200px;
             padding: 8px;
+        }
+
+        .status-picker-options {
+            display: flex;
+            flex-wrap: wrap;
             gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .status-picker-description {
+            padding: 6px 8px;
+            font-size: 12px;
+            color: #64748b;
+            background: #f8fafc;
+            border-radius: 4px;
+            text-align: center;
+            min-height: 16px;
+            border-top: 1px solid #e2e8f0;
         }
 
         .status-option {
@@ -930,12 +958,12 @@
             </div>
             <span class="instructions-toggle">▼</span>
         </div>        <div class="instructions-content">
-            <div>Click/Enter: Create first node</div>
-            <div>Enter: Edit selected node</div>
+            <div>Click/Enter: Create first item</div>
+            <div>Enter: Edit selected item</div>
             <div>Space: Toggle checkbox completion</div>
-            <div>N: Add/edit note for selected node</div>
+            <div>N: Add/edit note for selected item</div>
             <div>S: Set status (use arrows to navigate, Enter to select)</div>
-            <div>Delete: Delete node</div>
+            <div>Delete: Delete item</div>
             <div>Ctrl+→: Add child or Expand</div>
             <div>Ctrl+↓: Add sibling below</div>
             <div>Ctrl+↑: Add sibling above</div>
@@ -949,18 +977,28 @@
 
     <div id="overlay" class="overlay hidden"></div>
     <div id="delete-confirm" class="delete-confirm hidden">
-        <h3>Delete Node?</h3>
-        <p>Are you sure you want to delete this node?</p>
+        <h3>Delete Item?</h3>
+        <p>Are you sure you want to delete this item?</p>
         <div class="delete-confirm-buttons">
             <button class="cancel-btn" onclick="cancelDelete()">Cancel</button>
             <button class="confirm-btn" onclick="confirmDelete()">Delete</button>
         </div>
     </div>
 
+    <!-- Note delete confirmation dialog -->
+    <div id="delete-note-confirm" class="delete-confirm delete-note-confirm hidden">
+        <h3>Delete Note?</h3>
+        <p>Are you sure you want to delete this note? This action cannot be undone.</p>
+        <div class="delete-confirm-buttons">
+            <button class="cancel-btn" onclick="cancelDeleteNote()">Cancel</button>
+            <button class="confirm-btn" onclick="confirmDeleteNote()">Delete Note</button>
+        </div>
+    </div>
+
     <!-- Note modal -->
     <div id="note-modal" class="note-modal hidden">
         <div class="note-modal-header">
-            <h3>Node Note</h3>
+            <h3>Item Note</h3>
             <button class="note-modal-close" onclick="closeNoteModal()">×</button>
         </div>
         <div class="note-modal-body">
@@ -995,9 +1033,9 @@
         </div>
     </div>
 
-    <!-- Published: 2025-07-09 22:36:18 UTC -->
+    <!-- Published: 2025-07-10 01:00:59 UTC -->
     <script>
-        const PUBLISHED_TIMESTAMP = '2025-07-09 22:36:18 UTC';
+        const PUBLISHED_TIMESTAMP = '2025-07-10 01:00:59 UTC';
         // --- State ---
         let nodes = [];
         let selectedNode = null;
@@ -1208,7 +1246,7 @@
             // Position the picker near the click location but avoid overlapping with controls
             const rect = event.target.getBoundingClientRect();
             const pickerWidth = 200;
-            const pickerHeight = 120; // Approximate height
+            const pickerHeight = 140; // Approximate height (increased for description area)
             
             // Try to position to the right of the node first
             let left = rect.right + 10;
@@ -1238,6 +1276,15 @@
             const picker = document.createElement('div');
             picker.className = 'status-picker';
             
+            // Create options container
+            const optionsContainer = document.createElement('div');
+            optionsContainer.className = 'status-picker-options';
+            
+            // Create description area
+            const descriptionArea = document.createElement('div');
+            descriptionArea.className = 'status-picker-description';
+            descriptionArea.textContent = 'Select a status';
+            
             // Add clear option if node has status
             if (node.status) {
                 const clearOption = document.createElement('div');
@@ -1249,7 +1296,13 @@
                     clearNodeStatus(node);
                     hideStatusPicker();
                 };
-                picker.appendChild(clearOption);
+                clearOption.onmouseenter = () => {
+                    descriptionArea.textContent = 'Clear status';
+                };
+                clearOption.onmouseleave = () => {
+                    descriptionArea.textContent = 'Select a status';
+                };
+                optionsContainer.appendChild(clearOption);
             }
             
             // Add status options
@@ -1263,8 +1316,17 @@
                     setNodeStatus(node, key);
                     hideStatusPicker();
                 };
-                picker.appendChild(option);
+                option.onmouseenter = () => {
+                    descriptionArea.textContent = config.name;
+                };
+                option.onmouseleave = () => {
+                    descriptionArea.textContent = 'Select a status';
+                };
+                optionsContainer.appendChild(option);
             });
+            
+            picker.appendChild(optionsContainer);
+            picker.appendChild(descriptionArea);
             
             return picker;
         }
@@ -1292,11 +1354,11 @@
             const picker = createKeyboardStatusPicker(node);
             document.body.appendChild(picker);
             
-            // Position the picker near the selected node
+            // Position the picker near the selected item
             if (node.element) {
                 const rect = node.element.getBoundingClientRect();
                 const pickerWidth = 200;
-                const pickerHeight = 120;
+                const pickerHeight = 140;
                 
                 // Position to the right of the node
                 let left = rect.right + 10;
@@ -1320,7 +1382,7 @@
                 picker.style.left = left + 'px';
                 picker.style.top = top + 'px';
             } else {
-                // Center on screen if node element not available
+                // Center on screen if item element not available
                 picker.style.left = '50%';
                 picker.style.top = '50%';
                 picker.style.transform = 'translate(-50%, -50%)';
@@ -1341,6 +1403,16 @@
             picker.className = 'status-picker';
             picker.id = 'keyboard-status-picker';
             
+            // Create options container
+            const optionsContainer = document.createElement('div');
+            optionsContainer.className = 'status-picker-options';
+            
+            // Create description area
+            const descriptionArea = document.createElement('div');
+            descriptionArea.className = 'status-picker-description';
+            descriptionArea.id = 'keyboard-status-description';
+            descriptionArea.textContent = 'Use arrow keys to navigate, Enter to select';
+            
             statusPickerOptions = [];
             
             // Add clear option if node has status
@@ -1350,7 +1422,8 @@
                 clearOption.innerHTML = '×';
                 clearOption.title = 'Clear status';
                 clearOption.dataset.action = 'clear';
-                picker.appendChild(clearOption);
+                clearOption.dataset.description = 'Clear status';
+                optionsContainer.appendChild(clearOption);
                 statusPickerOptions.push(clearOption);
             }
             
@@ -1361,9 +1434,13 @@
                 option.innerHTML = config.icon;
                 option.title = config.name;
                 option.dataset.statusKey = key;
-                picker.appendChild(option);
+                option.dataset.description = config.name;
+                optionsContainer.appendChild(option);
                 statusPickerOptions.push(option);
             });
+            
+            picker.appendChild(optionsContainer);
+            picker.appendChild(descriptionArea);
             
             return picker;
         }
@@ -1374,9 +1451,17 @@
                 option.classList.remove('focused');
             });
             
-            // Add focus to current option
+            // Add focus to current option and update description
             if (statusPickerOptions[focusedOptionIndex]) {
                 statusPickerOptions[focusedOptionIndex].classList.add('focused');
+                
+                // Update description area with focused option's description
+                const descriptionArea = document.getElementById('keyboard-status-description');
+                if (descriptionArea) {
+                    const focusedOption = statusPickerOptions[focusedOptionIndex];
+                    const description = focusedOption.dataset.description || 'Use arrow keys to navigate, Enter to select';
+                    descriptionArea.textContent = description;
+                }
             }
         }
 
@@ -1516,13 +1601,13 @@
             pan.x -= (cx * (scale - 1)) * zoom;
             pan.y -= (cy * (scale - 1)) * zoom;
             applyTransform();
-        }, { passive: false });        // --- Node creation ---
+        }, { passive: false });        // --- Item creation ---
         function createFirstNode(e) {
-            // Position the first node on the left side with nice margin (200px from left edge)
+            // Position the first item on the left side with nice margin (200px from left edge)
             const leftMargin = 200;
             const x = (leftMargin - pan.x) / zoom;
             const y = (window.innerHeight / 2 - pan.y) / zoom;
-            const node = createNode('New Idea', x, y, null);
+            const node = createNode('New Item', x, y, null);
             scheduleRender();
             // Wait for render to complete before selecting and editing
             setTimeout(() => {
@@ -1550,7 +1635,7 @@
             nodes.push(node);
             
             // Mark as changed when creating new nodes (except during initial load)
-            if (nodes.length > 1 || text !== 'New Idea') {
+            if (nodes.length > 1 || text !== 'New Item') {
                 markAsChanged();
             }
             
@@ -1676,7 +1761,7 @@
             contentWrapper.className = 'node-content';
             
             // Better text handling
-            const textContent = node.text || 'New Node';
+            const textContent = node.text || 'New Item';
             contentWrapper.textContent = textContent;
             nodeEl.appendChild(contentWrapper);
 
@@ -1750,7 +1835,7 @@
                 nodeEl.appendChild(statusPlaceholder);
             }
 
-            // Add hover controls for node creation
+            // Add hover controls for item creation
             addHoverControls(nodeEl, node);
 
             node.element = nodeEl;
@@ -1797,22 +1882,22 @@
 
             // Node without children
             if (isRoot) {
-                // Root node without children: show right control only
+                // Root item without children: show right control only
                 const rightControl = document.createElement('div');
                 rightControl.className = 'hover-control right';
                 rightControl.innerHTML = '+';
-                rightControl.title = 'Add child node';
+                rightControl.title = 'Add child item';
                 rightControl.onclick = e => {
                     e.stopPropagation();
                     createChildNode(node);
                 };
                 nodeEl.appendChild(rightControl);
             } else {
-                // Non-root node without children: show all three controls
+                // Non-root item without children: show all three controls
                 const rightControl = document.createElement('div');
                 rightControl.className = 'hover-control right';
                 rightControl.innerHTML = '+';
-                rightControl.title = 'Add child node';
+                rightControl.title = 'Add child item';
                 rightControl.onclick = e => {
                     e.stopPropagation();
                     createChildNode(node);
@@ -2079,7 +2164,7 @@
         
         function stopEditing(node, value) {
             const oldText = node.text;
-            node.text = value.trim() || 'New Idea';
+            node.text = value.trim() || 'New Item';
             editingNode = null;
 
             // Mark as changed if text actually changed
@@ -2235,9 +2320,9 @@
             const messageElement = confirmDialog.querySelector('p');
 
             if (node.children.length > 0) {
-                messageElement.innerHTML = `This node has <span id="child-count">${childCount}</span> child node(s). Delete the entire branch?`;
+                messageElement.innerHTML = `This item has <span id="child-count">${childCount}</span> child item(s). Delete the entire branch?`;
             } else {
-                messageElement.textContent = 'Are you sure you want to delete this node?';
+                messageElement.textContent = 'Are you sure you want to delete this item?';
             }
 
             document.getElementById('overlay').classList.remove('hidden');
@@ -2516,6 +2601,23 @@
         
         function deleteNote() {
             if (currentNoteNode) {
+                // Disable note modal interaction
+                document.getElementById('note-modal').classList.add('disabled');
+                
+                // Show confirmation dialog
+                document.getElementById('overlay').classList.remove('hidden');
+                document.getElementById('delete-note-confirm').classList.remove('hidden');
+                
+                // Focus on cancel button for better accessibility
+                setTimeout(() => {
+                    const cancelBtn = document.querySelector('#delete-note-confirm .cancel-btn');
+                    if (cancelBtn) cancelBtn.focus();
+                }, 10);
+            }
+        }
+        
+        function confirmDeleteNote() {
+            if (currentNoteNode) {
                 const oldNote = currentNoteNode.note;
                 currentNoteNode.note = '';
                 
@@ -2527,12 +2629,26 @@
                 render();  // Re-render to update note indicators
                 closeNoteModal();
             }
+            
+            // Re-enable note modal and hide confirmation dialog
+            document.getElementById('note-modal').classList.remove('disabled');
+            document.getElementById('overlay').classList.add('hidden');
+            document.getElementById('delete-note-confirm').classList.add('hidden');
+        }
+        
+        function cancelDeleteNote() {
+            // Re-enable note modal and hide confirmation dialog
+            document.getElementById('note-modal').classList.remove('disabled');
+            document.getElementById('overlay').classList.add('hidden');
+            document.getElementById('delete-note-confirm').classList.add('hidden');
         }
         
         // Make functions globally accessible for onclick handlers
         window.closeNoteModal = closeNoteModal;
         window.saveNote = saveNote;
         window.deleteNote = deleteNote;
+        window.confirmDeleteNote = confirmDeleteNote;
+        window.cancelDeleteNote = cancelDeleteNote;
         window.saveMindMapAsMarkdown = saveMindMapAsMarkdown;
         window.saveMindMapAsNewFile = saveMindMapAsNewFile; // Expose the new function
         window.loadMindMapFromMarkdown = loadMindMapFromMarkdown;
@@ -2868,6 +2984,15 @@
                 return; // Don't process other keys when dialog is open
             }
 
+            // Handle escape key for note delete confirmation
+            if (!document.getElementById('delete-note-confirm').classList.contains('hidden')) {
+                if (e.key === 'Escape') {
+                    cancelDeleteNote();
+                    e.preventDefault();
+                }
+                return; // Don't process other keys when dialog is open
+            }
+
             // Handle Ctrl+S for saving
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
@@ -3128,7 +3253,7 @@
                     parent.expandBtn.textContent = '−';
                 }
             }
-            const node = createNode('New Node', 0, 0, parent);
+            const node = createNode('New Item', 0, 0, parent);
 
             // If parent didn't have children before, it needs an expand button now
             if (parent.children.length === 1 && parent.element && !parent.expandBtn) {
@@ -3160,7 +3285,7 @@
             if (!node.parent) return;
             const parent = node.parent;
             const idx = parent.children.indexOf(node);
-            const newNode = createNode('New Node', 0, 0, parent);
+            const newNode = createNode('New Item', 0, 0, parent);
             parent.children.splice(parent.children.indexOf(newNode), 1); // Remove from end
             parent.children.splice(idx + below, 0, newNode);            // Efficient incremental update after adding sibling
             autoArrange();
@@ -3559,7 +3684,8 @@
         // Ensure modals are hidden on load
         document.getElementById('note-modal').classList.add('hidden');
         document.getElementById('overlay').classList.add('hidden');
-        document.getElementById('delete-confirm').classList.add('hidden');        // Initial render
+        document.getElementById('delete-confirm').classList.add('hidden');
+        document.getElementById('delete-note-confirm').classList.add('hidden');        // Initial render
         scheduleRender();
         
         // Initialize file status display and page title
