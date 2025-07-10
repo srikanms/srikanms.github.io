@@ -1033,9 +1033,9 @@
         </div>
     </div>
 
-    <!-- Published: 2025-07-10 01:00:59 UTC -->
+    <!-- Published: 2025-07-10 01:07:34 UTC -->
     <script>
-        const PUBLISHED_TIMESTAMP = '2025-07-10 01:00:59 UTC';
+        const PUBLISHED_TIMESTAMP = '2025-07-10 01:07:34 UTC';
         // --- State ---
         let nodes = [];
         let selectedNode = null;
@@ -1083,7 +1083,7 @@
             const timestamp = generateTimestamp();
             const fromName = fromStatus ? statusConfig[fromStatus]?.name || fromStatus : 'None';
             const toName = toStatus ? statusConfig[toStatus]?.name || toStatus : 'None';
-            const statusChangeNote = `Status changed from "${fromName}" to "${toName}"`;
+            const statusChangeNote = `Status changed from "${fromName}" to "${toName}"\n`;
             
             // Add to existing note or create new note
             if (node.note && node.note.trim()) {
